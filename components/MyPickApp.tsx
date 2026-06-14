@@ -449,7 +449,9 @@ export default function MyPickApp() {
         <div className="footer-brand">
           <strong>MY PICK Liella!</strong>
           <span>Unofficial fan selection board</span>
-          <span className="footer-credit">Developed by <b>SCX</b></span>
+          <span className="footer-credit">
+            Developed by <a href="https://x.com/socxx_" target="_blank" rel="noreferrer"><b>SCX</b></a>
+          </span>
           <span className="footer-credit">Deployed by <b>Jayjayli</b></span>
         </div>
         <div className="footer-meta">
