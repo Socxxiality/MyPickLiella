@@ -50,3 +50,4 @@ Open <http://localhost:3000>.
 - <https://github.com/rurimegu/MyPickHasunosora>
 - <https://aqours-mypick.ccwu.cc/>
 - <https://mypick-ikizulive.kotoha.moe/>
+- <https://mypick-nijigaku.naufalalfa.com//>
