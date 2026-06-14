@@ -1,0 +1,9 @@
+.next/
+node_modules/
+out/
+*.log
+*.tsbuildinfo
+.DS_Store
+data/*.sqlite3
+data/*.sqlite3-shm
+data/*.sqlite3-wal
