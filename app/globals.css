@@ -842,6 +842,40 @@ button:disabled {
   font-weight: 800;
 }
 
+.most-picked-ranking {
+  margin-bottom: 18px;
+}
+
+.most-picked-ranking > header {
+  background: linear-gradient(135deg, rgba(74, 143, 197, 0.08), rgba(167, 96, 195, 0.06));
+}
+
+.most-picked-ranking h3 {
+  font-size: 26px;
+}
+
+.most-picked-ranking .ranking-row {
+  grid-template-columns: 32px 58px minmax(0, 1fr) auto;
+  padding: 13px 16px;
+}
+
+.most-picked-ranking .ranking-row > b {
+  font-size: 18px;
+}
+
+.most-picked-ranking .ranking-row:first-child > b {
+  color: #c38a18;
+  font-size: 24px;
+}
+
+.most-picked-ranking .ranking-row > img {
+  width: 58px;
+}
+
+.most-picked-ranking .ranking-row > div > strong {
+  font-size: 13px;
+}
+
 .community-notice {
   margin: 0 0 18px;
   padding: 11px 14px;

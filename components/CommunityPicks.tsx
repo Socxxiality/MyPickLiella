@@ -38,6 +38,7 @@ const text = {
     unit: "Subunit songs",
     solo: "Solo songs",
     others: "Others",
+    mostPicked: "MOST PICKED SONGS",
     note: "One current ballot per browser. Display names are never submitted or stored.",
     retry: "Could not load Community Picks.",
   },
@@ -57,6 +58,7 @@ const text = {
     unit: "ユニット楽曲",
     solo: "ソロ楽曲",
     others: "その他",
+    mostPicked: "最も選ばれた楽曲",
     note: "ブラウザごとに最新の1票のみ集計します。表示名は送信・保存されません。",
     retry: "Community Picksを読み込めませんでした。",
   },
@@ -81,20 +83,19 @@ function RankingSection({
   songs: CommunitySongStat[];
   ballots: number;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const visible = expanded ? songs : songs.slice(0, 5);
+  const visible = songs.slice(0, 10);
 
   return (
     <section className="community-ranking">
       <header>
         <i style={{ background: color }} />
         <h3>{title}</h3>
-        <span>TOP {Math.min(5, songs.length) || 5}</span>
+        <span>TOP {Math.min(10, songs.length) || 10}</span>
       </header>
       <div className="ranking-list">
         {visible.map((song, index) => (
           <article className="ranking-row" key={song.slug}>
-            <b>{String(index + 1).padStart(2, "0")}</b>
+            <b>#{index + 1}</b>
             <img src={song.cover} alt="" />
             <div>
               <strong>{song.title}</strong>
@@ -115,11 +116,72 @@ function RankingSection({
           </article>
         ))}
       </div>
-      {songs.length > 5 && (
-        <button className="ranking-expand" onClick={() => setExpanded((value) => !value)}>
-          {expanded ? "Show top 5" : `Show all ${songs.length}`}
-        </button>
-      )}
+    </section>
+  );
+}
+
+function MostPickedSection({
+  title,
+  stats,
+}: {
+  title: string;
+  stats: CommunityStats;
+}) {
+  const allSongs = useMemo(() => {
+    const merged = new Map<string, CommunitySongStat>();
+    for (const bucket of [stats.group, stats.unit, stats.solo, stats.others]) {
+      for (const song of bucket) {
+        const existing = merged.get(song.slug);
+        if (existing) {
+          existing.count += song.count;
+        } else {
+          merged.set(song.slug, { ...song });
+        }
+      }
+    }
+    // Recalculate percentage based on total ballots
+    const ballots = stats.ballots;
+    return [...merged.values()]
+      .map((song) => ({ ...song, percentage: ballots ? song.count / ballots : 0 }))
+      .sort((a, b) => b.count - a.count || a.title.localeCompare(b.title, "ja"))
+      .slice(0, 10);
+  }, [stats]);
+
+  if (!allSongs.length) return null;
+
+  const color = "#4a8fc5";
+
+  return (
+    <section className="community-ranking most-picked-ranking">
+      <header>
+        <i style={{ background: color }} />
+        <h3>{title}</h3>
+        <span>TOP {Math.min(10, allSongs.length)}</span>
+      </header>
+      <div className="ranking-list">
+        {allSongs.map((song, index) => (
+          <article className="ranking-row" key={song.slug}>
+            <b>#{index + 1}</b>
+            <img src={song.cover} alt="" />
+            <div>
+              <strong>{song.title}</strong>
+              <small>{song.artist}</small>
+              <span>
+                <i
+                  style={{
+                    width: `${Math.max(song.percentage * 100, 2)}%`,
+                    background: color,
+                  }}
+                />
+              </span>
+            </div>
+            <p>
+              <strong>{song.count}</strong>
+              <small>{stats.ballots ? `${(song.percentage * 100).toFixed(1)}%` : "0%"}</small>
+            </p>
+          </article>
+        ))}
+      </div>
     </section>
   );
 }
@@ -273,12 +335,15 @@ export default function CommunityPicks({
           <p>{t.empty}</p>
         </div>
       ) : (
-        <div className="community-grid">
-          <RankingSection title={t.group} color="#a760c3" songs={stats.group} ballots={stats.ballots} />
-          <RankingSection title={t.unit} color="#e78c52" songs={stats.unit} ballots={stats.ballots} />
-          <RankingSection title={t.solo} color="#d75f91" songs={stats.solo} ballots={stats.ballots} />
-          <RankingSection title={t.others} color="#4f8f87" songs={stats.others} ballots={stats.ballots} />
-        </div>
+        <>
+          <MostPickedSection title={t.mostPicked} stats={stats} />
+          <div className="community-grid">
+            <RankingSection title={t.group} color="#a760c3" songs={stats.group} ballots={stats.ballots} />
+            <RankingSection title={t.unit} color="#e78c52" songs={stats.unit} ballots={stats.ballots} />
+            <RankingSection title={t.solo} color="#d75f91" songs={stats.solo} ballots={stats.ballots} />
+            <RankingSection title={t.others} color="#4f8f87" songs={stats.others} ballots={stats.ballots} />
+          </div>
+        </>
       )}
 
       <p className="community-privacy">{t.note}</p>
