@@ -19,6 +19,7 @@ import { canonicalSongSlug } from "@/lib/song-aliases";
 
 type Lang = "en" | "ja" | "zh";
 type View = "picker" | "community";
+type Theme = "light" | "dark";
 
 interface ActivePicker {
   bucket: SongBucket;
@@ -93,6 +94,7 @@ const copy = {
 const STORAGE_KEY = "liella_mypicks_v2";
 const LEGACY_STORAGE_KEY = "liella_mypicks_v1";
 const NAME_KEY = "liella_mypick_name";
+const THEME_KEY = "liella_mypick_theme";
 const TOTAL_PICKS = 12;
 const PICK_BUCKETS: SongBucket[] = ["group", "unit", "solo", "others"];
 const LEGACY_MEMBER_IDS = new Set<string>(MEMBERS.map((member) => member.id));
@@ -196,6 +198,7 @@ export default function MyPickApp() {
   const [generating, setGenerating] = useState(false);
   const [picksReady, setPicksReady] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
+  const [theme, setTheme] = useState<Theme>("light");
   const urls = useRef<string[]>([]);
 
   useEffect(() => {
@@ -216,7 +219,18 @@ export default function MyPickApp() {
     } finally {
       setPicksReady(true);
     }
+    
+    const storedTheme = localStorage.getItem(THEME_KEY) as Theme;
+    if (storedTheme) {
+      setTheme(storedTheme);
+    } else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      setTheme("dark");
+    }
   }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
 
   const savePicks = useCallback((next: Picks) => {
     setPicks(next);
@@ -316,6 +330,17 @@ export default function MyPickApp() {
             <button className={lang === "ja" ? "active" : ""} onClick={() => setLang("ja")}>日本語</button>
             <button className={lang === "zh" ? "active" : ""} onClick={() => setLang("zh")}>中文</button>
           </div>
+          <button 
+            className="theme-toggle" 
+            onClick={() => {
+              const next = theme === "light" ? "dark" : "light";
+              setTheme(next);
+              localStorage.setItem(THEME_KEY, next);
+            }}
+            aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+          >
+            {theme === "light" ? "🌙" : "☀️"}
+          </button>
         </div>
       </header>
 
@@ -526,6 +551,7 @@ export default function MyPickApp() {
       {preview && (
         <PreviewModal
           image={preview}
+          lang={lang}
           showTitles={showTitles}
           transparent={transparent}
           generating={generating}
