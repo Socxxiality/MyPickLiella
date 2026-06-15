@@ -1,7 +1,9 @@
 "use client";
 
 import { MEMBERS, SONG_BY_SLUG } from "@/lib/catalog";
+import { ROMAJI_TITLES } from "@/lib/romaji";
 
+export type Lang = "en" | "ja" | "zh";
 export type Picks = Record<string, string>;
 
 interface ExportBoardsProps {
@@ -9,6 +11,7 @@ interface ExportBoardsProps {
   name: string;
   showTitles: boolean;
   transparent: boolean;
+  lang: Lang;
 }
 
 const MEMBER_COLORS = MEMBERS.map((member) => member.color);
@@ -50,11 +53,13 @@ function Cover({
   slot,
   placeholder,
   showTitles,
+  lang,
 }: {
   picks: Picks;
   slot: string;
   placeholder: string;
   showTitles: boolean;
+  lang: Lang;
 }) {
   const song = SONG_BY_SLUG[picks[slot]];
   return (
@@ -65,6 +70,9 @@ function Cover({
           {showTitles && (
             <div className="export-cover-title">
               <strong>{song.title}</strong>
+              {lang !== "ja" && ROMAJI_TITLES[song.slug] && (
+                <em className="romaji">{ROMAJI_TITLES[song.slug]}</em>
+              )}
               <span>{song.artist}</span>
             </div>
           )}
@@ -82,12 +90,14 @@ function ExportBlock({
   className,
   picks,
   showTitles,
+  lang,
 }: {
   title: string;
   bucket: "group" | "unit" | "solo" | "others";
   className: string;
   picks: Picks;
   showTitles: boolean;
+  lang: Lang;
 }) {
   return (
     <div className={`export-block ${className}`}>
@@ -100,6 +110,7 @@ function ExportBlock({
             slot={`${bucket}#${index}`}
             placeholder={`#${index + 1}`}
             showTitles={showTitles}
+            lang={lang}
           />
         ))}
       </div>
@@ -112,6 +123,7 @@ export default function ExportBoards({
   name,
   showTitles,
   transparent,
+  lang,
 }: ExportBoardsProps) {
   const boardClass = `export-board${transparent ? " transparent" : ""}`;
 
@@ -126,6 +138,7 @@ export default function ExportBoards({
           className="group-block"
           picks={picks}
           showTitles={showTitles}
+          lang={lang}
         />
         <ExportBlock
           title="SUBUNIT SONGS"
@@ -133,6 +146,7 @@ export default function ExportBoards({
           className="project-block"
           picks={picks}
           showTitles={showTitles}
+          lang={lang}
         />
         <ExportBlock
           title="SOLO PICKS"
@@ -140,6 +154,7 @@ export default function ExportBoards({
           className="solo-block"
           picks={picks}
           showTitles={showTitles}
+          lang={lang}
         />
         <ExportBlock
           title="OTHERS"
@@ -147,6 +162,7 @@ export default function ExportBoards({
           className="others-block"
           picks={picks}
           showTitles={showTitles}
+          lang={lang}
         />
         <ExportFooter name={name} />
       </section>

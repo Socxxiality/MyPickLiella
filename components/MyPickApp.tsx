@@ -16,6 +16,7 @@ import {
   type SongBucket,
 } from "@/lib/catalog";
 import { canonicalSongSlug } from "@/lib/song-aliases";
+import { ROMAJI_TITLES } from "@/lib/romaji";
 
 type Lang = "en" | "ja" | "zh";
 type View = "picker" | "community";
@@ -153,12 +154,14 @@ function SongSlot({
   placeholder,
   color,
   picks,
+  lang,
   onOpen,
 }: {
   slot: string;
   placeholder: string;
   color: string;
   picks: Picks;
+  lang: Lang;
   onOpen: () => void;
 }) {
   const song = SONG_BY_SLUG[picks[slot]];
@@ -173,6 +176,9 @@ function SongSlot({
           <img src={song.cover} alt="" />
           <span>
             <strong>{song.title}</strong>
+            {lang !== "ja" && ROMAJI_TITLES[song.slug] && (
+              <em className="romaji">{ROMAJI_TITLES[song.slug]}</em>
+            )}
             <small>{song.artist}</small>
           </span>
         </>
@@ -391,6 +397,7 @@ export default function MyPickApp() {
                   placeholder={`PICK #${index + 1}`}
                   color="#a760c3"
                   picks={picks}
+                  lang={lang}
                   onOpen={() => setActive({
                     bucket: "group",
                     slot: `group#${index}`,
@@ -419,6 +426,7 @@ export default function MyPickApp() {
                   placeholder={`PICK #${index + 1}`}
                   color="#e78c52"
                   picks={picks}
+                  lang={lang}
                   onOpen={() => setActive({
                     bucket: "unit",
                     slot: `unit#${index}`,
@@ -447,6 +455,7 @@ export default function MyPickApp() {
                   placeholder={`PICK #${index + 1}`}
                   color="#d75f91"
                   picks={picks}
+                  lang={lang}
                   onOpen={() => setActive({
                     bucket: "solo",
                     slot: `solo#${index}`,
@@ -475,6 +484,7 @@ export default function MyPickApp() {
                   placeholder={`PICK #${index + 1}`}
                   color="#4f8f87"
                   picks={picks}
+                  lang={lang}
                   onOpen={() => setActive({
                     bucket: "others",
                     slot: `others#${index}`,
@@ -530,6 +540,7 @@ export default function MyPickApp() {
 
       {active && (
         <SongPicker
+          lang={lang}
           label={active.label}
           color={active.color}
           songs={pickerSongs}
@@ -546,7 +557,7 @@ export default function MyPickApp() {
         />
       )}
 
-      <ExportBoards picks={picks} name={name} showTitles={showTitles} transparent={transparent} />
+      <ExportBoards picks={picks} name={name} showTitles={showTitles} transparent={transparent} lang={lang} />
 
       {preview && (
         <PreviewModal
