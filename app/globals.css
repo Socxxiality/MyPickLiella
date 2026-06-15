@@ -1762,6 +1762,39 @@ button:disabled {
   font-size: 11px;
 }
 
+/* Romaji Subtitles */
+.romaji {
+  display: block;
+  font-style: normal;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.85;
+}
+
+.song-slot span .romaji {
+  font-size: 0.8em;
+  margin-top: 2px;
+  color: var(--foreground);
+}
+
+.picker-song span .romaji {
+  font-size: 13px;
+  margin-top: 1px;
+  color: var(--foreground);
+}
+
+.export-cover-title .romaji {
+  font-size: 14px;
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.export-cover.compact .export-cover-title .romaji {
+  font-size: 11px;
+}
+
 @media (max-width: 840px) {
   .site-header,
   .control-panel,

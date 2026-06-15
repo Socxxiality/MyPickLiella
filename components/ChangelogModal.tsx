@@ -25,6 +25,8 @@ const CHANGELOG: ChangelogEntry[] = [
         "Added Chinese (中文) language support",
         "Added Share to X button in preview modal",
         "Added Dark Mode theme toggle",
+        "Added Sunny Passion songs to the Subunit catalog",
+        "Added Romaji subtitles and Romaji search functionality for Japanese Title songs",
       ],
       ja: [
         "重複していた「LIVE with a smile!」を統合 — 既存のLiella! Ver.の投票はメイン楽曲に移行",
@@ -32,6 +34,8 @@ const CHANGELOG: ChangelogEntry[] = [
         "中国語（中文）対応を追加",
         "プレビューモーダルにXへのシェアボタンを追加",
         "ダークモードのテーマ切り替えを追加",
+        "サブユニットにSunny Passionの楽曲を追加",
+        "日本語楽曲にローマ字のサブタイトルと検索機能を追加",
       ],
       zh: [
         "合并了重复的「LIVE with a smile!」条目 — 现有 Liella! Ver. 的投票已转移至主歌曲",
@@ -39,6 +43,8 @@ const CHANGELOG: ChangelogEntry[] = [
         "新增中文语言支持",
         "预览弹窗新增分享到 X 按钮",
         "新增深色模式主题切换",
+        "在小分队曲目中新增 Sunny Passion 的歌曲",
+        "为日文歌曲新增罗马音字幕及罗马音搜索功能",
       ],
     },
   },

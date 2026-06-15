@@ -2,8 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Song } from "@/lib/catalog";
+import { ROMAJI_TITLES } from "@/lib/romaji";
+
+type Lang = "en" | "ja" | "zh";
 
 interface SongPickerProps {
+  lang: Lang;
   label: string;
   color: string;
   songs: Song[];
@@ -22,6 +26,7 @@ const normalize = (value: string) =>
     .replace(/[^\p{L}\p{N}]/gu, "");
 
 export default function SongPicker({
+  lang,
   label,
   color,
   songs,
@@ -46,7 +51,8 @@ export default function SongPicker({
     return songs.filter((song) => {
       if (unavailable.has(song.slug) && song.slug !== currentSlug) return false;
       if (!needle) return true;
-      return normalize(`${song.title} ${song.artist} ${song.slug}`).includes(needle);
+      const romaji = ROMAJI_TITLES[song.slug] || "";
+      return normalize(`${song.title} ${song.artist} ${song.slug} ${romaji}`).includes(needle);
     });
   }, [currentSlug, query, songs, unavailable]);
 
@@ -83,6 +89,9 @@ export default function SongPicker({
                 <img src={song.cover} alt="" />
                 <span>
                   <strong>{song.title}</strong>
+                  {lang !== "ja" && ROMAJI_TITLES[song.slug] && (
+                    <em className="romaji">{ROMAJI_TITLES[song.slug]}</em>
+                  )}
                   <small>{song.artist}</small>
                 </span>
                 {selected && <b>✓</b>}
