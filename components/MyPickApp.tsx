@@ -17,7 +17,7 @@ import {
 } from "@/lib/catalog";
 import { canonicalSongSlug } from "@/lib/song-aliases";
 
-type Lang = "en" | "ja";
+type Lang = "en" | "ja" | "zh";
 type View = "picker" | "community";
 
 interface ActivePicker {
@@ -67,6 +67,26 @@ const copy = {
     generating: "作成中...",
     clearConfirm: "すべての選曲をクリアしますか？",
     songs: "曲",
+  },
+  zh: {
+    subtitle: "打造属于你的 Liella! 歌单吧。",
+    group: "Liella! 歌曲",
+    groupHelp: "从 Liella! 的歌曲中选出你最喜欢的3首。",
+    unit: "小组歌曲",
+    unitHelp: "从 CatChu!、KALEIDOSCORE、5yncri5e! 中各选3首。",
+    solo: "个人歌曲",
+    soloHelp: "从任意 Liella! 成员的独唱曲中选出3首。",
+    others: "其他",
+    othersHelp: "选出3首合作曲、跨系列歌曲或 Liella! 成员参与的特别歌曲。",
+    name: "你的名字（选填）",
+    download: "下载图片",
+    pickerTab: "创建选曲",
+    communityTab: "社区选曲",
+    clear: "全部清除",
+    selected: "已选",
+    generating: "生成中...",
+    clearConfirm: "确定要清除所有选曲吗？",
+    songs: "首歌曲",
   },
 } satisfies Record<Lang, Record<string, string>>;
 
@@ -294,6 +314,7 @@ export default function MyPickApp() {
           <div className="language-toggle" aria-label="Language">
             <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>EN</button>
             <button className={lang === "ja" ? "active" : ""} onClick={() => setLang("ja")}>日本語</button>
+            <button className={lang === "zh" ? "active" : ""} onClick={() => setLang("zh")}>中文</button>
           </div>
         </div>
       </header>
@@ -515,7 +536,7 @@ export default function MyPickApp() {
       )}
 
       {showChangelog && (
-        <ChangelogModal onClose={() => setShowChangelog(false)} />
+        <ChangelogModal lang={lang} onClose={() => setShowChangelog(false)} />
       )}
     </main>
   );

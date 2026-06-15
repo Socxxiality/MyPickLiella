@@ -8,7 +8,7 @@ import {
   type CommunityStats,
 } from "@/lib/community";
 
-type Lang = "en" | "ja";
+type Lang = "en" | "ja" | "zh";
 
 interface CommunityPicksProps {
   active: boolean;
@@ -61,6 +61,26 @@ const text = {
     mostPicked: "最も選ばれた楽曲",
     note: "ブラウザごとに最新の1票のみ集計します。表示名は送信・保存されません。",
     retry: "Community Picksを読み込めませんでした。",
+  },
+  zh: {
+    eyebrow: "匿名社区统计",
+    title: "社区",
+    accent: "选曲",
+    intro: "查看 Liella! 社区的歌单统计。你的选曲会自动同步。",
+    ballots: "选曲板",
+    selections: "歌曲选择",
+    updated: "最后更新",
+    waiting: "等待选曲中",
+    syncing: "同步中...",
+    synced: "已自动同步",
+    empty: "还没有社区投票。你的选曲可以成为第一个。",
+    group: "Liella! 歌曲",
+    unit: "小组歌曲",
+    solo: "个人歌曲",
+    others: "其他",
+    mostPicked: "最受欢迎歌曲",
+    note: "每个浏览器仅统计最新的一票。显示名称不会被发送或保存。",
+    retry: "无法加载社区选曲。",
   },
 } satisfies Record<Lang, Record<string, string>>;
 
@@ -298,7 +318,7 @@ export default function CommunityPicks({
           : t.waiting;
 
   const updated = stats.updatedAt
-    ? new Intl.DateTimeFormat(lang === "ja" ? "ja-JP" : "en-GB", {
+    ? new Intl.DateTimeFormat(lang === "ja" ? "ja-JP" : lang === "zh" ? "zh-CN" : "en-GB", {
         dateStyle: "medium",
         timeStyle: "short",
       }).format(new Date(stats.updatedAt))
