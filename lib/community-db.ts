@@ -6,6 +6,7 @@ import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { MEMBERS, SONG_BY_SLUG, type SongBucket } from "@/lib/catalog";
 import type { CommunitySongStat, CommunityStats } from "@/lib/community";
+import { canonicalSongSlug } from "@/lib/song-aliases";
 
 type Picks = Record<string, string>;
 
@@ -80,19 +81,18 @@ export function validatePicks(input: unknown): Picks {
       throw new Error("The ballot contains an invalid slot.");
     }
 
-    const song = SONG_BY_SLUG[slug];
+    const canonicalSlug = canonicalSongSlug(slug);
+    const song = SONG_BY_SLUG[canonicalSlug];
     const bucket = slot.split("#")[0];
     if (!song || song.bucket !== bucket) {
       throw new Error("A selected song does not belong to its slot.");
     }
 
     const used = usedByBucket.get(bucket) ?? new Set<string>();
-    if (used.has(slug)) {
-      throw new Error("The same song cannot be selected twice in one category.");
-    }
-    used.add(slug);
+    if (used.has(canonicalSlug)) continue;
+    used.add(canonicalSlug);
     usedByBucket.set(bucket, used);
-    clean[slot] = slug;
+    clean[slot] = canonicalSlug;
   }
 
   return clean;
@@ -107,23 +107,24 @@ function normalizeStoredPicks(input: unknown): Picks {
 
   for (const [slot, slug] of Object.entries(input)) {
     if (typeof slug !== "string") continue;
-    const song = SONG_BY_SLUG[slug];
+    const canonicalSlug = canonicalSongSlug(slug);
+    const song = SONG_BY_SLUG[canonicalSlug];
     if (!song) continue;
 
     const [bucket] = slot.split("#");
     if (validSlots.has(slot) && buckets.includes(bucket as SongBucket) && song.bucket === bucket) {
       const songBucket = bucket as SongBucket;
       const used = usedByBucket.get(songBucket) ?? new Set<string>();
-      if (!used.has(slug)) {
-        clean[slot] = slug;
-        used.add(slug);
+      if (!used.has(canonicalSlug)) {
+        clean[slot] = canonicalSlug;
+        used.add(canonicalSlug);
         usedByBucket.set(songBucket, used);
       }
       continue;
     }
 
     if (legacyMemberIds.has(bucket) && song.bucket === "solo") {
-      if (!legacySoloSlugs.includes(slug)) legacySoloSlugs.push(slug);
+      if (!legacySoloSlugs.includes(canonicalSlug)) legacySoloSlugs.push(canonicalSlug);
     }
   }
 

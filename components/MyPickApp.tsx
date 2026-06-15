@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { domToBlob } from "modern-screenshot";
+import ChangelogModal from "@/components/ChangelogModal";
 import CommunityPicks from "@/components/CommunityPicks";
 import ExportBoards, { type Picks } from "@/components/ExportBoards";
 import PreviewModal from "@/components/PreviewModal";
@@ -14,6 +15,7 @@ import {
   type Song,
   type SongBucket,
 } from "@/lib/catalog";
+import { canonicalSongSlug } from "@/lib/song-aliases";
 
 type Lang = "en" | "ja";
 type View = "picker" | "community";
@@ -84,7 +86,8 @@ function normalizeStoredPicks(input: unknown): Picks {
 
   for (const [slot, slug] of Object.entries(input)) {
     if (typeof slug !== "string") continue;
-    const song = SONG_BY_SLUG[slug];
+    const canonicalSlug = canonicalSongSlug(slug);
+    const song = SONG_BY_SLUG[canonicalSlug];
     if (!song) continue;
 
     const [bucket, indexText] = slot.split("#");
@@ -98,16 +101,16 @@ function normalizeStoredPicks(input: unknown): Picks {
     ) {
       const songBucket = bucket as SongBucket;
       const bucketUsed = used.get(songBucket) ?? new Set<string>();
-      if (!bucketUsed.has(slug)) {
-        next[`${songBucket}#${index}`] = slug;
-        bucketUsed.add(slug);
+      if (!bucketUsed.has(canonicalSlug)) {
+        next[`${songBucket}#${index}`] = canonicalSlug;
+        bucketUsed.add(canonicalSlug);
         used.set(songBucket, bucketUsed);
       }
       continue;
     }
 
     if (LEGACY_MEMBER_IDS.has(bucket) && song.bucket === "solo") {
-      if (!legacySoloSlugs.includes(slug)) legacySoloSlugs.push(slug);
+      if (!legacySoloSlugs.includes(canonicalSlug)) legacySoloSlugs.push(canonicalSlug);
     }
   }
 
@@ -172,6 +175,7 @@ export default function MyPickApp() {
   const [transparent, setTransparent] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [picksReady, setPicksReady] = useState(false);
+  const [showChangelog, setShowChangelog] = useState(false);
   const urls = useRef<string[]>([]);
 
   useEffect(() => {
@@ -474,6 +478,7 @@ export default function MyPickApp() {
             </a>
             .
           </p>
+          <button className="footer-changelog-link" onClick={() => setShowChangelog(true)}>Changelog</button>
         </div>
       </footer>
 
@@ -507,6 +512,10 @@ export default function MyPickApp() {
           onToggleTransparent={setTransparent}
           onClose={closePreviews}
         />
+      )}
+
+      {showChangelog && (
+        <ChangelogModal onClose={() => setShowChangelog(false)} />
       )}
     </main>
   );

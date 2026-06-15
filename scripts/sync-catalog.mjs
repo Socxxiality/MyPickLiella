@@ -19,6 +19,9 @@ const OTHER_TITLE_PREFIXES = [
   "LIVE with a smile!",
   "Shooting Voice!!",
 ];
+const EXCLUDED_TRACK_IDS = new Set([
+  1891029909, // LIVE with a smile! (Liella! Ver.)
+]);
 
 const root = process.cwd();
 const catalogPath = path.join(root, "lib", "catalog.ts");
@@ -86,6 +89,7 @@ function isEligible(track) {
   if (!track.trackName || !track.artistName || !track.artworkUrl100 || !track.trackViewUrl) {
     return false;
   }
+  if (EXCLUDED_TRACK_IDS.has(track.trackId)) return false;
   if (/off vocal|instrumental/i.test(track.trackName)) return false;
   const releaseTime = Date.parse(track.releaseDate);
   return !Number.isFinite(releaseTime) || releaseTime <= Date.now();

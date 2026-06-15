@@ -1,4 +1,5 @@
 import { SUPPLEMENTAL_SONGS } from "@/lib/supplemental-songs";
+import { SONG_SLUG_ALIASES } from "@/lib/song-aliases";
 
 export type SongBucket = "group" | "unit" | "solo" | "others";
 
@@ -137,7 +138,7 @@ export const SONGS: Song[] = [
   { slug: "bring-the-love", title: "Bring the LOVE!", bucket: "others", artist: "ラブライブ！シリーズ選抜メンバー", cover: bringTheLove, source: "https://lovelive-anime.jp/special/live/live_detail.php?p=asiatour_2024" },
   { slug: "live-with-a-smile", title: "LIVE with a smile!", bucket: "others", artist: "Aqours・虹ヶ咲・Liella!", cover: liveWithASmile, source: "https://www.lovelive-anime.jp/" },
   { slug: "shooting-voice", title: "Shooting Voice!!", bucket: "others", artist: "Liella!", cover: shootingVoice, source: "https://www.lovelive-anime.jp/" },
-  ...SUPPLEMENTAL_SONGS,
+  ...SUPPLEMENTAL_SONGS.filter((song) => !SONG_SLUG_ALIASES[song.slug]),
 ];
 
 export const SONG_BY_SLUG = Object.fromEntries(
