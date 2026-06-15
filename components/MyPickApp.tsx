@@ -219,7 +219,7 @@ export default function MyPickApp() {
     } finally {
       setPicksReady(true);
     }
-    
+
     const storedTheme = localStorage.getItem(THEME_KEY) as Theme;
     if (storedTheme) {
       setTheme(storedTheme);
@@ -330,8 +330,8 @@ export default function MyPickApp() {
             <button className={lang === "ja" ? "active" : ""} onClick={() => setLang("ja")}>日本語</button>
             <button className={lang === "zh" ? "active" : ""} onClick={() => setLang("zh")}>中文</button>
           </div>
-          <button 
-            className="theme-toggle" 
+          <button
+            className="theme-toggle"
             onClick={() => {
               const next = theme === "light" ? "dark" : "light";
               setTheme(next);
@@ -409,7 +409,7 @@ export default function MyPickApp() {
           <div className="feature-card project-card">
             <div className="feature-label">
               <strong>SUBUNITS</strong>
-              <span>CatChu! · KALEIDOSCORE · 5yncri5e!</span>
+              <span>CatChu! · KALEIDOSCORE · 5yncri5e! · Sunny Passion</span>
             </div>
             <div className="three-slots">
               {[0, 1, 2].map((index) => (

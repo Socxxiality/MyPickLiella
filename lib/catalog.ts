@@ -62,6 +62,7 @@ const ijigenBigbang = "/covers/others-ijigen-bigbang.jpg";
 const bringTheLove = "/covers/others-bring-the-love.jpg";
 const liveWithASmile = "/covers/others-live-with-a-smile.jpg";
 const shootingVoice = "/covers/others-shooting-voice.jpg";
+const sunnyPassion = "/covers/sunny-passion.jpg";
 
 export const SONGS: Song[] = [
   { slug: "start-true-dreams", title: "START!! True dreams", bucket: "group", artist: "Liella!", cover: first, source: official },
@@ -92,6 +93,8 @@ export const SONGS: Song[] = [
   { slug: "jellyfish", title: "Jellyfish", bucket: "unit", artist: "5yncri5e!", cover: syncrise, source: official },
   { slug: "thank-you-good-morning", title: "Thank you Good morning", bucket: "unit", artist: "5yncri5e!", cover: syncrise, source: official },
   { slug: "wawd-5yncri5e", title: "What a Wonderful Dream!! ～5yncri5e! Ver.～", bucket: "unit", artist: "5yncri5e!", cover: syncrise, source: official },
+  { slug: "hot-passion", title: "HOT PASSION!!!", bucket: "unit", artist: "Sunny Passion", cover: sunnyPassion, source: official },
+  { slug: "till-sunrise", title: "Till Sunrise", bucket: "unit", artist: "Sunny Passion", cover: sunnyPassion, source: official },
 
   { slug: "aozora-wo-matteru", title: "青空を待ってる", bucket: "solo", artist: "澁谷かのん", cover: first, source: official },
   { slug: "free-flight", title: "Free Flight", bucket: "solo", artist: "澁谷かのん", cover: second, source: official },
