@@ -9,6 +9,7 @@ import PreviewModal from "@/components/PreviewModal";
 import SongPicker from "@/components/SongPicker";
 import {
   MEMBERS,
+  PICK_GROUPS,
   SONGS,
   SONG_BY_SLUG,
   pickGroupForSong,
@@ -134,35 +135,97 @@ const NAME_KEY = "liella_mypick_name";
 const THEME_KEY = "liella_mypick_theme";
 const MODE_KEY = "liella_mypick_mode";
 
-// Re-bucket any picks (from any layout/mode — group#/solo#/gen#/member-id#) into
-// the target mode's rows by looking each song up via its canonical slug. Indices
-// are reassigned to the first open slot per row. Preserves the chosen songs when
-// switching modes.
-function regroupPicks(input: unknown, mode: Mode): Picks {
-  if (!input || typeof input !== "object" || Array.isArray(input)) return {};
+// ── Pick-state model ────────────────────────────────────────────────────────
+// The GENERATION layout is the lossless master: picks are always STORED in gen
+// rows (gen1/gen2/gen3/solo/unit/uta/others — ≤3 each), at their exact slot
+// indices (deliberate gaps are preserved). Liella! mode is an INDEX-PRESERVING
+// projection of that master onto the original four rows (Liella!/Subunit/Solo/
+// Others): a master song at row#i shows at bucket#i — so a song you put in a
+// row's 3rd slot stays in the 3rd slot. Because the single "Liella!" row draws
+// from gen1/gen2/gen3 (+ Uta), two songs can land on the same Liella! slot; the
+// earlier generation (PICK_GROUPS order) keeps it and the other is HIDDEN but
+// kept in the master. So switching gen → liella → gen restores everything;
+// deleting a *visible* song in Liella! removes it from the master, while songs
+// hidden by a slot clash survive the round-trip.
 
-  const next: Picks = {};
-  const used = new Map<string, Set<string>>();
+// Build the master from stored slot→slug pairs, preserving each song's gen row
+// AND slot index. A gen-row slot stays put; a legacy Liella! slot (e.g. group#2)
+// maps to the song's gen row at the same index (gen{N}#2). Dedupes songs; on a
+// rare index clash, falls back to the first free slot in that row.
+function buildMaster(entries: Iterable<[string, string]>): Picks {
+  const master: Picks = {};
+  const placed = new Set<string>();
+  for (const [slot, rawSlug] of entries) {
+    if (typeof rawSlug !== "string") continue;
+    const slug = canonicalSongSlug(rawSlug);
+    const song = SONG_BY_SLUG[slug];
+    if (!song || placed.has(slug)) continue;
+    const group = pickGroupForSong(song);
+    const parsed = Number(slot.split("#")[1]);
+    const index = Number.isInteger(parsed) && parsed >= 0 && parsed < 3 ? parsed : -1;
+    let target = index >= 0 ? `${group}#${index}` : "";
+    if (!target || master[target]) {
+      const free = [0, 1, 2].find((i) => !master[`${group}#${i}`]);
+      if (free === undefined) continue;
+      target = `${group}#${free}`;
+    }
+    master[target] = slug;
+    placed.add(slug);
+  }
+  return master;
+}
 
-  const place = (group: string, slug: string) => {
-    const groupUsed = used.get(group) ?? new Set<string>();
-    if (groupUsed.has(slug)) return;
-    const openIndex = [0, 1, 2].find((index) => !next[`${group}#${index}`]);
-    if (openIndex === undefined) return;
-    next[`${group}#${openIndex}`] = slug;
-    groupUsed.add(slug);
-    used.set(group, groupUsed);
-  };
+// Project the master onto Liella! rows by song.bucket. Two passes:
+//   1. POSITIONAL — a master song at row#i takes bucket#i if free (so a song in a
+//      row's 3rd slot stays in the 3rd slot). On a clash the earlier generation
+//      keeps the slot; the loser is deferred.
+//   2. FILL — remaining deferred songs slide into any still-empty slots of their
+//      bucket (gen order). Whatever doesn't fit is hidden but kept in the master.
+// Returns the displayed picks plus a map from each display slot to its master
+// slot (used to apply Liella!-mode edits back onto the master).
+function projectToLiella(master: Picks): { display: Picks; source: Record<string, string> } {
+  const display: Picks = {};
+  const source: Record<string, string> = {};
+  const deferred: Array<{ masterSlot: string; slug: string; bucket: string }> = [];
 
-  for (const slug of Object.values(input)) {
-    if (typeof slug !== "string") continue;
-    const canonicalSlug = canonicalSongSlug(slug);
-    const song = SONG_BY_SLUG[canonicalSlug];
-    if (!song) continue;
-    place(groupOf(song, mode), canonicalSlug);
+  for (const group of PICK_GROUPS) {
+    for (const index of [0, 1, 2]) {
+      const masterSlot = `${group}#${index}`;
+      const slug = master[masterSlot];
+      if (!slug) continue;
+      const song = SONG_BY_SLUG[slug];
+      if (!song) continue;
+      const target = `${song.bucket}#${index}`;
+      if (display[target]) {
+        deferred.push({ masterSlot, slug, bucket: song.bucket });
+        continue;
+      }
+      display[target] = slug;
+      source[target] = masterSlot;
+    }
   }
 
-  return next;
+  for (const { masterSlot, slug, bucket } of deferred) {
+    const free = [0, 1, 2].find((i) => !display[`${bucket}#${i}`]);
+    if (free === undefined) continue; // bucket full → hidden, still in the master
+    display[`${bucket}#${free}`] = slug;
+    source[`${bucket}#${free}`] = masterSlot;
+  }
+
+  return { display, source };
+}
+
+// Seed the sticky Liella! view from the master: the projected display plus the
+// "stash" of master songs the cap couldn't show (kept at their gen slots so the
+// master can be rebuilt from view + stash).
+function enterLiellaView(master: Picks): { display: Picks; stash: Picks } {
+  const { display } = projectToLiella(master);
+  const shown = new Set(Object.values(display));
+  const stash: Picks = {};
+  for (const [slot, slug] of Object.entries(master)) {
+    if (!shown.has(slug)) stash[slot] = slug;
+  }
+  return { display, stash };
 }
 
 function SongSlot({
@@ -222,6 +285,12 @@ export default function MyPickApp() {
   const [showChangelog, setShowChangelog] = useState(false);
   const [theme, setTheme] = useState<Theme>("light");
   const [mode, setMode] = useState<Mode>("gen");
+  // Liella!-mode is a sticky projection: `liellaView` is the editable display
+  // (clearing a slot leaves a gap — overflow only slides in on re-entry), and
+  // `hiddenStash` holds the master songs the cap couldn't show, preserved so the
+  // gen master can be rebuilt from view + stash on every edit.
+  const [liellaView, setLiellaView] = useState<Picks>({});
+  const [hiddenStash, setHiddenStash] = useState<Picks>({});
   const urls = useRef<string[]>([]);
 
   useEffect(() => {
@@ -233,8 +302,14 @@ export default function MyPickApp() {
         LEGACY_STORAGE_KEYS.map((key) => localStorage.getItem(key)).find(Boolean) ??
         null;
       if (stored) {
-        const cleaned = regroupPicks(JSON.parse(stored), storedMode);
+        // Master is always gen rows, regardless of the mode/layout it was saved in.
+        const cleaned = buildMaster(Object.entries(JSON.parse(stored)));
         setPicks(cleaned);
+        if (storedMode === "liella") {
+          const { display, stash } = enterLiellaView(cleaned);
+          setLiellaView(display);
+          setHiddenStash(stash);
+        }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
         for (const key of LEGACY_STORAGE_KEYS) localStorage.removeItem(key);
       }
@@ -268,21 +343,24 @@ export default function MyPickApp() {
     localStorage.setItem(NAME_KEY, value);
   };
 
+  // Switching modes never loses songs. Entering Liella! re-projects the master
+  // into a fresh sticky view (this is when overflow songs slide into gaps).
+  // Leaving it keeps the master, which liella edits have kept current.
   const switchMode = useCallback(
     (next: Mode) => {
+      if (next === mode) return;
+      if (next === "liella") {
+        const { display, stash } = enterLiellaView(picks);
+        setLiellaView(display);
+        setHiddenStash(stash);
+      }
       setMode(next);
       localStorage.setItem(MODE_KEY, next);
       setActive(null);
-      setPicks((current) => {
-        const remapped = regroupPicks(current, next);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(remapped));
-        return remapped;
-      });
     },
-    [],
+    [mode, picks],
   );
 
-  const selectedCount = Object.keys(picks).length;
   const t = copy[lang];
 
   const LAYOUTS: Record<Mode, Array<{
@@ -308,11 +386,34 @@ export default function MyPickApp() {
   const sections = LAYOUTS[mode];
   const totalPicks = sections.length * 3;
 
-  // Community results are always generation-canonical, regardless of UI mode.
-  const communityPicks = useMemo(
-    () => (mode === "gen" ? picks : regroupPicks(picks, "gen")),
-    [picks, mode],
+  // The picks shown/edited in the current mode: the master itself in gen mode,
+  // or the sticky Liella! view (seeded on mode entry, edited in place).
+  const activeDisplay = mode === "gen" ? picks : liellaView;
+
+  // Apply a Liella!-mode slot edit: update the sticky view (clearing leaves a
+  // gap — no auto-fill), then rebuild the gen master from view + stash so it
+  // stays current for gen mode, community, export, and persistence.
+  const editLiellaSlot = useCallback(
+    (slot: string, slug: string | null) => {
+      const nextView: Picks = { ...liellaView };
+      if (slug) {
+        for (const [s, v] of Object.entries(nextView)) if (v === slug) delete nextView[s]; // dedupe
+        nextView[slot] = slug;
+      } else {
+        delete nextView[slot];
+      }
+      setLiellaView(nextView);
+      savePicks(buildMaster([...Object.entries(nextView), ...Object.entries(hiddenStash)]));
+    },
+    [liellaView, hiddenStash, savePicks],
   );
+
+  // Community results are always generation-canonical — the master already is.
+  const communityPicks = picks;
+
+  // Total songs selected (master) and how many are visible in the current view.
+  const selectedCount = Object.keys(picks).length;
+  const shownCount = Object.keys(activeDisplay).length;
 
   const pickerSongs = useMemo(
     () => (active ? SONGS.filter((song) => groupOf(song, mode) === active.bucket) : []),
@@ -321,12 +422,14 @@ export default function MyPickApp() {
 
   const unavailable = useMemo(() => {
     if (!active) return new Set<string>();
+    const current = activeDisplay[active.slot];
     return new Set(
-      Object.entries(picks)
-        .filter(([slot]) => slot !== active.slot && slot.startsWith(`${active.bucket}#`))
-        .map(([, slug]) => slug),
+      Object.values(picks).filter((slug) => {
+        const song = SONG_BY_SLUG[slug];
+        return song && slug !== current && groupOf(song, mode) === active.bucket;
+      }),
     );
-  }, [active, picks]);
+  }, [active, picks, activeDisplay, mode]);
 
   const closePreviews = useCallback(() => {
     for (const url of urls.current) URL.revokeObjectURL(url);
@@ -370,12 +473,35 @@ export default function MyPickApp() {
 
   const chooseSong = (song: Song) => {
     if (!active) return;
-    savePicks({ ...picks, [active.slot]: song.slug });
+    if (mode === "gen") {
+      const next: Picks = {};
+      for (const [slot, slug] of Object.entries(picks)) {
+        if (slug !== song.slug) next[slot] = slug; // dedupe the song
+      }
+      next[active.slot] = song.slug;
+      savePicks(next);
+    } else {
+      editLiellaSlot(active.slot, song.slug);
+    }
     setActive(null);
   };
 
+  const clearSlot = (slot: string) => {
+    if (mode === "gen") {
+      const next = { ...picks };
+      delete next[slot];
+      savePicks(next);
+    } else {
+      editLiellaSlot(slot, null);
+    }
+  };
+
   const clearAll = () => {
-    if (!selectedCount || window.confirm(t.clearConfirm)) savePicks({});
+    if (!selectedCount || window.confirm(t.clearConfirm)) {
+      savePicks({});
+      setLiellaView({});
+      setHiddenStash({});
+    }
   };
 
   return (
@@ -443,7 +569,7 @@ export default function MyPickApp() {
             </button>
           </div>
           <div className="control-actions">
-            <span><strong>{selectedCount}</strong> / {totalPicks} {t.selected}</span>
+            <span><strong>{shownCount}</strong> / {totalPicks} {t.selected}</span>
             <button className="secondary-button" onClick={clearAll} disabled={!selectedCount}>{t.clear}</button>
             <button className="primary-button" onClick={generate} disabled={generating || !selectedCount}>
               {generating ? t.generating : t.download}
@@ -470,7 +596,7 @@ export default function MyPickApp() {
                       slot={`${sec.group}#${index}`}
                       placeholder={`PICK #${index + 1}`}
                       color={sec.color}
-                      picks={picks}
+                      picks={activeDisplay}
                       lang={lang}
                       onOpen={() => setActive({
                         bucket: sec.group,
@@ -533,20 +659,18 @@ export default function MyPickApp() {
           label={active.label}
           color={active.color}
           songs={pickerSongs}
-          currentSlug={picks[active.slot]}
+          currentSlug={activeDisplay[active.slot]}
           unavailable={unavailable}
           onClose={() => setActive(null)}
           onSelect={chooseSong}
-          onClear={picks[active.slot] ? () => {
-            const next = { ...picks };
-            delete next[active.slot];
-            savePicks(next);
+          onClear={activeDisplay[active.slot] ? () => {
+            clearSlot(active.slot);
             setActive(null);
           } : undefined}
         />
       )}
 
-      <ExportBoards picks={picks} name={name} showTitles={showTitles} transparent={transparent} lang={lang} mode={mode} />
+      <ExportBoards picks={activeDisplay} name={name} showTitles={showTitles} transparent={transparent} lang={lang} mode={mode} />
 
       {preview && (
         <PreviewModal
