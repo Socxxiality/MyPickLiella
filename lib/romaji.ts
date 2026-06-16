@@ -1,4 +1,5 @@
 export const ROMAJI_TITLES: Record<string, string> = {
+  "koi-no-tutorial": "Koi no Tutorial",
   "hajimari-wa-kimi-no-sora": "Hajimari wa Kimi no Sora",
   "mirai-wa-kaze-no-you-ni": "Mirai wa Kaze no You ni",
   "unison": "Unison",

@@ -4,9 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Picks } from "@/components/ExportBoards";
 import {
   EMPTY_COMMUNITY_STATS,
+  type CommunityOshiStat,
   type CommunitySongStat,
   type CommunityStats,
 } from "@/lib/community";
+import type { MemberId } from "@/lib/catalog";
 
 type Lang = "en" | "ja" | "zh";
 
@@ -15,10 +17,11 @@ interface CommunityPicksProps {
   lang: Lang;
   picks: Picks;
   picksReady: boolean;
+  oshiMemberId: MemberId | "";
 }
 
 const VOTER_KEY = "liella_community_voter_v1";
-const LAST_SYNC_KEY = "liella_community_last_picks_v2";
+const LAST_SYNC_KEY = "liella_community_last_ballot_v3";
 const TOTAL_PICKS = 12;
 
 const text = {
@@ -39,6 +42,7 @@ const text = {
     solo: "Solo songs",
     others: "Others",
     mostPicked: "MOST PICKED SONGS",
+    oshi: "一番推し MEMBERS",
     note: "One current ballot per browser. Display names are never submitted or stored.",
     retry: "Could not load Community Picks.",
   },
@@ -59,6 +63,7 @@ const text = {
     solo: "ソロ楽曲",
     others: "その他",
     mostPicked: "最も選ばれた楽曲",
+    oshi: "一番推しメンバー",
     note: "ブラウザごとに最新の1票のみ集計します。表示名は送信・保存されません。",
     retry: "Community Picksを読み込めませんでした。",
   },
@@ -79,6 +84,7 @@ const text = {
     solo: "个人歌曲",
     others: "其他",
     mostPicked: "最受欢迎歌曲",
+    oshi: "一番推し成员",
     note: "每个浏览器仅统计最新的一票。显示名称不会被发送或保存。",
     retry: "无法加载社区选曲。",
   },
@@ -206,11 +212,59 @@ function MostPickedSection({
   );
 }
 
+function OshiRankingSection({
+  title,
+  members,
+  ballots,
+}: {
+  title: string;
+  members: CommunityOshiStat[];
+  ballots: number;
+}) {
+  const visible = members.slice(0, 11);
+  if (!visible.length) return null;
+
+  return (
+    <section className="community-ranking oshi-ranking">
+      <header>
+        <i style={{ background: "#a760c3" }} />
+        <h3>{title}</h3>
+        <span>TOP {Math.min(11, members.length)}</span>
+      </header>
+      <div className="oshi-ranking-list">
+        {visible.map((member, index) => (
+          <article className="oshi-ranking-row" key={member.id}>
+            <b>#{index + 1}</b>
+            <i style={{ background: member.color }} />
+            <div>
+              <strong>{member.nameJa}</strong>
+              <small>{member.name}</small>
+              <span>
+                <i
+                  style={{
+                    width: `${Math.max(member.percentage * 100, 2)}%`,
+                    background: member.color,
+                  }}
+                />
+              </span>
+            </div>
+            <p>
+              <strong>{member.count}</strong>
+              <small>{ballots ? `${(member.percentage * 100).toFixed(1)}%` : "0%"}</small>
+            </p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function CommunityPicks({
   active,
   lang,
   picks,
   picksReady,
+  oshiMemberId,
 }: CommunityPicksProps) {
   const [stats, setStats] = useState<CommunityStats>(EMPTY_COMMUNITY_STATS);
   const [loading, setLoading] = useState(true);
@@ -226,6 +280,13 @@ export default function CommunityPicks({
       ),
     ),
     [picks],
+  );
+  const serializedBallot = useMemo(
+    () => JSON.stringify({
+      oshiMemberId: oshiMemberId || null,
+      picks: JSON.parse(serializedPicks) as Picks,
+    }),
+    [oshiMemberId, serializedPicks],
   );
 
   const load = useCallback(async () => {
@@ -249,13 +310,13 @@ export default function CommunityPicks({
   useEffect(() => {
     if (!picksReady) return;
 
-    const lastSyncedPicks = localStorage.getItem(LAST_SYNC_KEY);
+    const lastSyncedBallot = localStorage.getItem(LAST_SYNC_KEY);
     if (selectedCount === 0 && !localStorage.getItem(VOTER_KEY)) {
       localStorage.removeItem(LAST_SYNC_KEY);
       setSyncState("idle");
       return;
     }
-    if (selectedCount > 0 && lastSyncedPicks === serializedPicks) {
+    if (selectedCount > 0 && lastSyncedBallot === serializedBallot) {
       setSyncState("saved");
       return;
     }
@@ -280,7 +341,11 @@ export default function CommunityPicks({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(selectedCount === 0
             ? { voterId }
-            : { voterId, picks: JSON.parse(serializedPicks) as Picks }),
+            : {
+                voterId,
+                oshiMemberId: oshiMemberId || null,
+                picks: JSON.parse(serializedPicks) as Picks,
+              }),
           signal: controller.signal,
         });
         const body = await response.json() as CommunityStats | { error: string };
@@ -291,7 +356,7 @@ export default function CommunityPicks({
         if (selectedCount === 0) {
           localStorage.removeItem(LAST_SYNC_KEY);
         } else {
-          localStorage.setItem(LAST_SYNC_KEY, serializedPicks);
+          localStorage.setItem(LAST_SYNC_KEY, serializedBallot);
         }
         setStats(body);
         setSyncState(selectedCount === 0 ? "idle" : "saved");
@@ -306,7 +371,7 @@ export default function CommunityPicks({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [picksReady, selectedCount, serializedPicks, t.retry]);
+  }, [oshiMemberId, picksReady, selectedCount, serializedBallot, serializedPicks, t.retry]);
 
   const syncLabel =
     syncState === "saving"
@@ -357,6 +422,7 @@ export default function CommunityPicks({
       ) : (
         <>
           <MostPickedSection title={t.mostPicked} stats={stats} />
+          <OshiRankingSection title={t.oshi} members={stats.oshi} ballots={stats.ballots} />
           <div className="community-grid">
             <RankingSection title={t.group} color="#a760c3" songs={stats.group} ballots={stats.ballots} />
             <RankingSection title={t.unit} color="#e78c52" songs={stats.unit} ballots={stats.ballots} />

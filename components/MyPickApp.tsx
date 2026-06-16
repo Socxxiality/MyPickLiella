@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { domToBlob } from "modern-screenshot";
 import ChangelogModal from "@/components/ChangelogModal";
 import CommunityPicks from "@/components/CommunityPicks";
@@ -12,6 +12,7 @@ import {
   SONGS,
   SONG_BY_SLUG,
   songsForBucket,
+  type MemberId,
   type Song,
   type SongBucket,
 } from "@/lib/catalog";
@@ -41,6 +42,9 @@ const copy = {
     others: "Others",
     othersHelp: "Pick three collaborations, cross-series songs, or special songs featuring Liella! members.",
     name: "Your name (optional)",
+    oshi: "一番推し member",
+    oshiHelp: "Optional. Choose your favorite Liella! member.",
+    oshiNone: "No oshi",
     download: "Download images",
     pickerTab: "Build my picks",
     communityTab: "Community Picks",
@@ -61,6 +65,9 @@ const copy = {
     others: "その他",
     othersHelp: "コラボ、シリーズ横断、Liella!メンバー参加曲から3曲選んでください。",
     name: "名前（任意）",
+    oshi: "一番推しメンバー",
+    oshiHelp: "任意。あなたのLiella!推しメンバーを選べます。",
+    oshiNone: "未選択",
     download: "画像をダウンロード",
     pickerTab: "選曲を作る",
     communityTab: "みんなの選曲",
@@ -81,6 +88,9 @@ const copy = {
     others: "其他",
     othersHelp: "选出3首合作曲、跨系列歌曲或 Liella! 成员参与的特别歌曲。",
     name: "你的名字（选填）",
+    oshi: "一番推し成员",
+    oshiHelp: "选填。选择你最喜欢的 Liella! 成员。",
+    oshiNone: "未选择",
     download: "下载图片",
     pickerTab: "创建选曲",
     communityTab: "社区选曲",
@@ -95,10 +105,16 @@ const copy = {
 const STORAGE_KEY = "liella_mypicks_v2";
 const LEGACY_STORAGE_KEY = "liella_mypicks_v1";
 const NAME_KEY = "liella_mypick_name";
+const OSHI_KEY = "liella_mypick_oshi_member";
 const THEME_KEY = "liella_mypick_theme";
 const TOTAL_PICKS = 12;
 const PICK_BUCKETS: SongBucket[] = ["group", "unit", "solo", "others"];
 const LEGACY_MEMBER_IDS = new Set<string>(MEMBERS.map((member) => member.id));
+const MEMBER_IDS = new Set<string>(MEMBERS.map((member) => member.id));
+
+function isMemberId(value: string | null): value is MemberId {
+  return Boolean(value && MEMBER_IDS.has(value));
+}
 
 function normalizeStoredPicks(input: unknown): Picks {
   if (!input || typeof input !== "object" || Array.isArray(input)) return {};
@@ -192,9 +208,57 @@ function SongSlot({
   );
 }
 
+function OshiMemberPicker({
+  value,
+  lang,
+  label,
+  help,
+  noneLabel,
+  onChange,
+}: {
+  value: MemberId | "";
+  lang: Lang;
+  label: string;
+  help: string;
+  noneLabel: string;
+  onChange: (value: MemberId | "") => void;
+}) {
+  return (
+    <section className="oshi-picker" aria-label={label}>
+      <div>
+        <span>{label}</span>
+        <small>{help}</small>
+      </div>
+      <div className="oshi-chip-list">
+        <button
+          className={!value ? "active" : ""}
+          onClick={() => onChange("")}
+          type="button"
+        >
+          {noneLabel}
+        </button>
+        {MEMBERS.map((member) => (
+          <button
+            key={member.id}
+            className={value === member.id ? "active" : ""}
+            onClick={() => onChange(member.id)}
+            style={{ "--member-color": member.color } as CSSProperties}
+            type="button"
+          >
+            <i />
+            <strong>{member.nameJa}</strong>
+            <small>{lang === "ja" ? member.unit : member.name}</small>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function MyPickApp() {
   const [picks, setPicks] = useState<Picks>({});
   const [name, setName] = useState("");
+  const [oshiMemberId, setOshiMemberId] = useState<MemberId | "">("");
   const [lang, setLang] = useState<Lang>("en");
   const [view, setView] = useState<View>("picker");
   const [active, setActive] = useState<ActivePicker | null>(null);
@@ -219,9 +283,16 @@ export default function MyPickApp() {
         localStorage.removeItem(LEGACY_STORAGE_KEY);
       }
       setName(localStorage.getItem(NAME_KEY) ?? "");
+      const storedOshi = localStorage.getItem(OSHI_KEY);
+      if (isMemberId(storedOshi)) {
+        setOshiMemberId(storedOshi);
+      } else {
+        localStorage.removeItem(OSHI_KEY);
+      }
     } catch {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(LEGACY_STORAGE_KEY);
+      localStorage.removeItem(OSHI_KEY);
     } finally {
       setPicksReady(true);
     }
@@ -246,6 +317,15 @@ export default function MyPickApp() {
   const updateName = (value: string) => {
     setName(value);
     localStorage.setItem(NAME_KEY, value);
+  };
+
+  const updateOshiMember = (value: MemberId | "") => {
+    setOshiMemberId(value);
+    if (value) {
+      localStorage.setItem(OSHI_KEY, value);
+    } else {
+      localStorage.removeItem(OSHI_KEY);
+    }
   };
 
   const selectedCount = Object.keys(picks).length;
@@ -370,6 +450,14 @@ export default function MyPickApp() {
               placeholder="Selected by..."
             />
           </label>
+          <OshiMemberPicker
+            value={oshiMemberId}
+            lang={lang}
+            label={t.oshi}
+            help={t.oshiHelp}
+            noneLabel={t.oshiNone}
+            onChange={updateOshiMember}
+          />
           <div className="control-actions">
             <span><strong>{selectedCount}</strong> / {TOTAL_PICKS} {t.selected}</span>
             <button className="secondary-button" onClick={clearAll} disabled={!selectedCount}>{t.clear}</button>
@@ -503,6 +591,7 @@ export default function MyPickApp() {
         lang={lang}
         picks={picks}
         picksReady={picksReady}
+        oshiMemberId={oshiMemberId}
       />
 
       <footer className="site-footer">
@@ -557,7 +646,14 @@ export default function MyPickApp() {
         />
       )}
 
-      <ExportBoards picks={picks} name={name} showTitles={showTitles} transparent={transparent} lang={lang} />
+      <ExportBoards
+        picks={picks}
+        name={name}
+        oshiMemberId={oshiMemberId}
+        showTitles={showTitles}
+        transparent={transparent}
+        lang={lang}
+      />
 
       {preview && (
         <PreviewModal

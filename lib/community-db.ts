@@ -4,8 +4,8 @@ import { createHash } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { MEMBERS, SONG_BY_SLUG, type SongBucket } from "@/lib/catalog";
-import type { CommunitySongStat, CommunityStats } from "@/lib/community";
+import { MEMBERS, SONG_BY_SLUG, type MemberId, type SongBucket } from "@/lib/catalog";
+import type { CommunityOshiStat, CommunitySongStat, CommunityStats } from "@/lib/community";
 import { canonicalSongSlug } from "@/lib/song-aliases";
 
 type Picks = Record<string, string>;
@@ -13,10 +13,12 @@ type Picks = Record<string, string>;
 interface BallotRow {
   voter_key: string;
   picks_json: string;
+  oshi_member_id: string | null;
   updated_at: string;
 }
 
 const buckets: SongBucket[] = ["group", "unit", "solo", "others"];
+const memberById = new Map(MEMBERS.map((member) => [member.id, member]));
 const legacyMemberIds = new Set<string>(MEMBERS.map((member) => member.id));
 const validSlots = new Set([
   "group#0",
@@ -56,11 +58,24 @@ function getDb(): DatabaseSync {
     CREATE TABLE IF NOT EXISTS ballots (
       voter_key TEXT PRIMARY KEY,
       picks_json TEXT NOT NULL,
+      oshi_member_id TEXT,
       updated_at TEXT NOT NULL
     );
   `);
+  const columns = db.prepare("PRAGMA table_info(ballots)").all() as Array<{ name: string }>;
+  if (!columns.some((column) => column.name === "oshi_member_id")) {
+    db.exec("ALTER TABLE ballots ADD COLUMN oshi_member_id TEXT;");
+  }
   globalCommunity.liellaCommunityDb = db;
   return db;
+}
+
+export function validateOshiMemberId(input: unknown): MemberId | null {
+  if (input === undefined || input === null || input === "") return null;
+  if (typeof input !== "string" || !memberById.has(input as MemberId)) {
+    throw new Error("Invalid oshi member.");
+  }
+  return input as MemberId;
 }
 
 export function validatePicks(input: unknown): Picks {
@@ -140,7 +155,7 @@ function normalizeStoredPicks(input: unknown): Picks {
   return clean;
 }
 
-export function saveBallot(voterId: string, picks: Picks): void {
+export function saveBallot(voterId: string, picks: Picks, oshiMemberId: MemberId | null = null): void {
   if (!/^[A-Za-z0-9_-]{8,100}$/.test(voterId)) {
     throw new Error("Invalid anonymous voter ID.");
   }
@@ -148,13 +163,14 @@ export function saveBallot(voterId: string, picks: Picks): void {
   const voterKey = createHash("sha256").update(voterId).digest("hex");
   getDb()
     .prepare(`
-      INSERT INTO ballots (voter_key, picks_json, updated_at)
-      VALUES (?, ?, ?)
+      INSERT INTO ballots (voter_key, picks_json, oshi_member_id, updated_at)
+      VALUES (?, ?, ?, ?)
       ON CONFLICT(voter_key) DO UPDATE SET
         picks_json = excluded.picks_json,
+        oshi_member_id = excluded.oshi_member_id,
         updated_at = excluded.updated_at
     `)
-    .run(voterKey, JSON.stringify(picks), new Date().toISOString());
+    .run(voterKey, JSON.stringify(picks), oshiMemberId, new Date().toISOString());
   globalCommunity.liellaCommunityStatsCache = undefined;
 }
 
@@ -174,7 +190,7 @@ export function getCommunityStats(): CommunityStats {
   if (cached && cached.expiresAt > now) return cached.value;
 
   const rows = getDb()
-    .prepare("SELECT voter_key, picks_json, updated_at FROM ballots ORDER BY updated_at DESC")
+    .prepare("SELECT voter_key, picks_json, oshi_member_id, updated_at FROM ballots ORDER BY updated_at DESC")
     .all() as unknown as BallotRow[];
 
   const tallies = {
@@ -183,6 +199,7 @@ export function getCommunityStats(): CommunityStats {
     solo: new Map<string, number>(),
     others: new Map<string, number>(),
   };
+  const oshiTallies = new Map<MemberId, number>();
   const activeRows: Array<{ picks: Picks; updatedAt: string }> = [];
   let selections = 0;
 
@@ -208,6 +225,11 @@ export function getCommunityStats(): CommunityStats {
     }
     activeRows.push({ picks, updatedAt: row.updated_at });
 
+    if (row.oshi_member_id && memberById.has(row.oshi_member_id as MemberId)) {
+      const id = row.oshi_member_id as MemberId;
+      oshiTallies.set(id, (oshiTallies.get(id) ?? 0) + 1);
+    }
+
     for (const slug of Object.values(picks)) {
       const song = SONG_BY_SLUG[slug];
       if (!song) continue;
@@ -231,10 +253,26 @@ export function getCommunityStats(): CommunityStats {
       })
       .sort((a, b) => b.count - a.count || a.title.localeCompare(b.title, "ja"));
 
+  const oshiRank = (): CommunityOshiStat[] =>
+    [...oshiTallies.entries()]
+      .map(([id, count]) => {
+        const member = memberById.get(id)!;
+        return {
+          id,
+          name: member.name,
+          nameJa: member.nameJa,
+          color: member.color,
+          count,
+          percentage: activeRows.length ? count / activeRows.length : 0,
+        };
+      })
+      .sort((a, b) => b.count - a.count || a.nameJa.localeCompare(b.nameJa, "ja"));
+
   const stats = {
     ballots: activeRows.length,
     selections,
     updatedAt: activeRows[0]?.updatedAt ?? null,
+    oshi: oshiRank(),
     group: rank(tallies.group),
     unit: rank(tallies.unit),
     solo: rank(tallies.solo),

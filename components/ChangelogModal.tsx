@@ -16,6 +16,27 @@ const ui = {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2",
+    date: "2026-06-16",
+    changes: {
+      en: [
+        "Added Oshi Member Picker and Top Oshi leaderboard",
+        "Added the newly announced song 'Koi no Tutorial' to the catalog",
+        "Corrected missing or incorrect album covers for Solo songs",
+      ],
+      ja: [
+        "一番推しメンバー選択機能と推しランキングを追加",
+        "新曲「恋のチュートリアル」を追加",
+        "ソロ楽曲のジャケット画像の一部を修正",
+      ],
+      zh: [
+        "新增了一番推选成员功能以及社区推选排行榜",
+        "添加了新歌「恋のチュートリアル」",
+        "修正了部分 Solo 歌曲封面图片",
+      ],
+    },
+  },
+  {
     version: "1.1",
     date: "2026-06-15",
     changes: {

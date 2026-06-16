@@ -3,6 +3,7 @@ import {
   deleteBallot,
   getCommunityStats,
   saveBallot,
+  validateOshiMemberId,
   validatePicks,
 } from "@/lib/community-db";
 
@@ -121,6 +122,7 @@ export async function POST(request: Request) {
 
     const body = JSON.parse(rawBody) as {
       voterId?: unknown;
+      oshiMemberId?: unknown;
       picks?: unknown;
     };
     if (typeof body.voterId !== "string") {
@@ -128,7 +130,8 @@ export async function POST(request: Request) {
     }
 
     const picks = validatePicks(body.picks);
-    saveBallot(body.voterId, picks);
+    const oshiMemberId = validateOshiMemberId(body.oshiMemberId);
+    saveBallot(body.voterId, picks, oshiMemberId);
     return NextResponse.json(getCommunityStats(), {
       headers: {
         "Cache-Control": "no-store",

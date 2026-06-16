@@ -1,6 +1,7 @@
 "use client";
 
-import { MEMBERS, SONG_BY_SLUG } from "@/lib/catalog";
+import type { CSSProperties } from "react";
+import { MEMBERS, SONG_BY_SLUG, type MemberId } from "@/lib/catalog";
 import { ROMAJI_TITLES } from "@/lib/romaji";
 
 export type Lang = "en" | "ja" | "zh";
@@ -12,6 +13,7 @@ interface ExportBoardsProps {
   showTitles: boolean;
   transparent: boolean;
   lang: Lang;
+  oshiMemberId: MemberId | "";
 }
 
 const MEMBER_COLORS = MEMBERS.map((member) => member.color);
@@ -39,11 +41,26 @@ function ExportHeader({ section }: { section: string }) {
   );
 }
 
-function ExportFooter({ name }: { name: string }) {
+function ExportFooter({ name, oshiMemberId, lang }: { name: string; oshiMemberId: MemberId | ""; lang: Lang }) {
+  const oshiMember = MEMBERS.find((member) => member.id === oshiMemberId);
+
+  const oshiPrefix = {
+    en: "Oshi:",
+    ja: "一番推し:",
+    zh: "最推:",
+  }[lang];
+
   return (
     <footer className="export-footer">
       <strong>UNOFFICIAL FAN SELECTION BOARD</strong>
-      <span>{name.trim() ? `Selected by ${name.trim()}` : "MY PICK Liella!"}</span>
+      <span className="export-footer-meta">
+        <span>{name.trim() ? `Selected by ${name.trim()}` : "MY PICK Liella!"}</span>
+        {oshiMember && (
+          <em style={{ "--oshi-color": oshiMember.color } as CSSProperties}>
+            {oshiPrefix} {oshiMember.nameJa}
+          </em>
+        )}
+      </span>
     </footer>
   );
 }
@@ -124,6 +141,7 @@ export default function ExportBoards({
   showTitles,
   transparent,
   lang,
+  oshiMemberId,
 }: ExportBoardsProps) {
   const boardClass = `export-board${transparent ? " transparent" : ""}`;
 
@@ -164,7 +182,7 @@ export default function ExportBoards({
           showTitles={showTitles}
           lang={lang}
         />
-        <ExportFooter name={name} />
+        <ExportFooter name={name} oshiMemberId={oshiMemberId} lang={lang} />
       </section>
     </div>
   );

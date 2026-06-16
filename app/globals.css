@@ -284,6 +284,7 @@ button:disabled {
 
 .control-panel {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
   gap: 22px;
@@ -322,6 +323,71 @@ button:disabled {
 .control-panel input:focus {
   border-color: rgba(43, 155, 211, 0.7);
   box-shadow: 0 0 0 4px rgba(43, 155, 211, 0.1);
+}
+
+.oshi-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  order: -1;
+}
+
+.oshi-picker > div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.oshi-picker > div:first-child span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.oshi-picker > div:first-child small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.oshi-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.oshi-chip-list button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--input-bg);
+  color: var(--ink);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.oshi-chip-list button i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--member-color, #ccc);
+}
+
+.oshi-chip-list button.active {
+  border-color: var(--member-color, #2ea8df);
+  background: var(--member-color, #2ea8df);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.oshi-chip-list button.active small {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .control-actions {
@@ -825,6 +891,87 @@ button:disabled {
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.12em;
+}
+
+.oshi-ranking {
+  grid-column: 1 / -1;
+  margin-bottom: 12px;
+}
+
+.oshi-ranking-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.oshi-ranking-row {
+  display: grid;
+  grid-template-columns: 24px 12px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  border-bottom: 1px solid rgba(16, 36, 58, 0.07);
+  border-right: 1px solid rgba(16, 36, 58, 0.07);
+}
+
+.oshi-ranking-row > b {
+  color: #9ba5ae;
+  font-family: var(--font-display);
+  font-size: 17px;
+  text-align: right;
+}
+
+.oshi-ranking-row > i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.oshi-ranking-row > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.oshi-ranking-row > div strong {
+  font-size: 16px;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.oshi-ranking-row > div small {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.oshi-ranking-row > div span {
+  height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.oshi-ranking-row > div span i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+}
+
+.oshi-ranking-row > p {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  text-align: right;
+  min-width: 32px;
+}
+
+.oshi-ranking-row > p strong {
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.oshi-ranking-row > p small {
+  color: var(--muted);
+  font-size: 9px;
 }
 
 .ranking-row {
@@ -1684,6 +1831,22 @@ button:disabled {
 
 .export-footer strong {
   color: #10243a;
+}
+
+.export-footer-meta {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.export-footer-meta em {
+  font-style: normal;
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: var(--oshi-color, #10243a);
+  color: #fff;
+  font-weight: 700;
+  font-size: 11px;
 }
 
 .export-members-grid {
