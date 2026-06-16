@@ -172,6 +172,7 @@ function SongSlot({
   picks,
   lang,
   onOpen,
+  onClear,
 }: {
   slot: string;
   placeholder: string;
@@ -179,6 +180,7 @@ function SongSlot({
   picks: Picks;
   lang: Lang;
   onOpen: () => void;
+  onClear?: () => void;
 }) {
   const song = SONG_BY_SLUG[picks[slot]];
   return (
@@ -190,6 +192,18 @@ function SongSlot({
       {song ? (
         <>
           <img src={song.cover} alt="" />
+          {onClear && (
+            <div
+              className="clear-slot-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClear();
+              }}
+              title="Clear pick"
+            >
+              ×
+            </div>
+          )}
           <span>
             <strong>{song.title}</strong>
             {lang !== "ja" && ROMAJI_TITLES[song.slug] && (
@@ -390,6 +404,12 @@ export default function MyPickApp() {
     setActive(null);
   };
 
+  const clearPick = (slotToClear: string) => {
+    const next = { ...picks };
+    delete next[slotToClear];
+    savePicks(next);
+  };
+
   const clearAll = () => {
     if (!selectedCount || window.confirm(t.clearConfirm)) savePicks({});
   };
@@ -492,6 +512,7 @@ export default function MyPickApp() {
                     label: `${t.group} #${index + 1}`,
                     color: "#a760c3",
                   })}
+                  onClear={() => clearPick(`group#${index}`)}
                 />
               ))}
             </div>
@@ -521,6 +542,7 @@ export default function MyPickApp() {
                     label: `${t.unit} #${index + 1}`,
                     color: "#e78c52",
                   })}
+                  onClear={() => clearPick(`unit#${index}`)}
                 />
               ))}
             </div>
@@ -550,6 +572,7 @@ export default function MyPickApp() {
                     label: `${t.solo} #${index + 1}`,
                     color: "#d75f91",
                   })}
+                  onClear={() => clearPick(`solo#${index}`)}
                 />
               ))}
             </div>
@@ -579,6 +602,7 @@ export default function MyPickApp() {
                     label: `${t.others} #${index + 1}`,
                     color: "#4f8f87",
                   })}
+                  onClear={() => clearPick(`others#${index}`)}
                 />
               ))}
             </div>
@@ -637,12 +661,6 @@ export default function MyPickApp() {
           unavailable={unavailable}
           onClose={() => setActive(null)}
           onSelect={chooseSong}
-          onClear={picks[active.slot] ? () => {
-            const next = { ...picks };
-            delete next[active.slot];
-            savePicks(next);
-            setActive(null);
-          } : undefined}
         />
       )}
 

@@ -15,7 +15,6 @@ interface SongPickerProps {
   unavailable: Set<string>;
   onClose: () => void;
   onSelect: (song: Song) => void;
-  onClear?: () => void;
 }
 
 const normalize = (value: string) =>
@@ -34,7 +33,6 @@ export default function SongPicker({
   unavailable,
   onClose,
   onSelect,
-  onClear,
 }: SongPickerProps) {
   const [query, setQuery] = useState("");
 
@@ -102,7 +100,7 @@ export default function SongPicker({
         </div>
 
         <footer className="picker-footer">
-          {onClear ? <button onClick={onClear}>Clear this pick</button> : <span />}
+          <span />
           <span>{filtered.length} songs</span>
         </footer>
       </section>
