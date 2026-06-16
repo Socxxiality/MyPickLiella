@@ -5,6 +5,7 @@ import { ROMAJI_TITLES } from "@/lib/romaji";
 
 export type Lang = "en" | "ja" | "zh";
 export type Picks = Record<string, string>;
+export type Mode = "liella" | "gen";
 
 interface ExportBoardsProps {
   picks: Picks;
@@ -12,7 +13,37 @@ interface ExportBoardsProps {
   showTitles: boolean;
   transparent: boolean;
   lang: Lang;
+  mode: Mode;
 }
+
+interface ExportBlockConfig {
+  title: string;
+  bucket: string;
+  className: string;
+}
+
+const BLOCKS: Record<Mode, ExportBlockConfig[]> = {
+  liella: [
+    { title: "Liella!", bucket: "group", className: "group-block" },
+    { title: "SUBUNIT SONGS", bucket: "unit", className: "project-block" },
+    { title: "SOLO PICKS", bucket: "solo", className: "solo-block" },
+    { title: "OTHERS", bucket: "others", className: "others-block" },
+  ],
+  gen: [
+    { title: "GEN 1 SONGS", bucket: "gen1", className: "gen-block gen1-block" },
+    { title: "GEN 2 SONGS", bucket: "gen2", className: "gen-block gen2-block" },
+    { title: "GEN 3 SONGS", bucket: "gen3", className: "gen-block gen3-block" },
+    { title: "SUBUNIT SONGS", bucket: "unit", className: "project-block" },
+    { title: "SOLO PICKS", bucket: "solo", className: "solo-block" },
+    { title: "LIELLA! NO UTA", bucket: "uta", className: "uta-block" },
+    { title: "OTHERS", bucket: "others", className: "others-block" },
+  ],
+};
+
+const SECTION_LABEL: Record<Mode, string> = {
+  liella: "Liella! · SUBUNIT · SOLO · OTHERS",
+  gen: "GEN 1·2·3 · SOLO · SUBUNIT · UTA · OTHERS",
+};
 
 const MEMBER_COLORS = MEMBERS.map((member) => member.color);
 
@@ -93,7 +124,7 @@ function ExportBlock({
   lang,
 }: {
   title: string;
-  bucket: "group" | "unit" | "solo" | "others";
+  bucket: string;
   className: string;
   picks: Picks;
   showTitles: boolean;
@@ -124,46 +155,26 @@ export default function ExportBoards({
   showTitles,
   transparent,
   lang,
+  mode,
 }: ExportBoardsProps) {
   const boardClass = `export-board${transparent ? " transparent" : ""}`;
 
   return (
     <div className="export-stage" aria-hidden>
       <section id="export-board" className={boardClass}>
-        <ExportHeader section="Liella! · SUBUNIT · SOLO · OTHERS" />
+        <ExportHeader section={SECTION_LABEL[mode]} />
         <Spectrum />
-        <ExportBlock
-          title="Liella!"
-          bucket="group"
-          className="group-block"
-          picks={picks}
-          showTitles={showTitles}
-          lang={lang}
-        />
-        <ExportBlock
-          title="SUBUNIT SONGS"
-          bucket="unit"
-          className="project-block"
-          picks={picks}
-          showTitles={showTitles}
-          lang={lang}
-        />
-        <ExportBlock
-          title="SOLO PICKS"
-          bucket="solo"
-          className="solo-block"
-          picks={picks}
-          showTitles={showTitles}
-          lang={lang}
-        />
-        <ExportBlock
-          title="OTHERS"
-          bucket="others"
-          className="others-block"
-          picks={picks}
-          showTitles={showTitles}
-          lang={lang}
-        />
+        {BLOCKS[mode].map((block) => (
+          <ExportBlock
+            key={block.bucket}
+            title={block.title}
+            bucket={block.bucket}
+            className={block.className}
+            picks={picks}
+            showTitles={showTitles}
+            lang={lang}
+          />
+        ))}
         <ExportFooter name={name} />
       </section>
     </div>

@@ -1,7 +1,17 @@
 import { SUPPLEMENTAL_SONGS } from "@/lib/supplemental-songs";
 import { SONG_SLUG_ALIASES } from "@/lib/song-aliases";
+import { SONG_GENERATIONS, UTA_SLUGS } from "@/lib/song-data";
 
 export type SongBucket = "group" | "unit" | "solo" | "others";
+
+// Member generations. Liella! debuted with 5 members (Gen 1, 2021), added 4 to
+// reach 9 (Gen 2, 2022), then 2 more to reach 11 (Gen 3, June 2023).
+export type Generation = 1 | 2 | 3;
+
+// Board pick groups (rows). Full-group songs are split into per-generation rows
+// (gen1/gen2/gen3) via the hard-coded map in lib/song-data.ts; solos, subunits,
+// リエラのうた (uta), and others each get their own row.
+export type PickGroup = "gen1" | "gen2" | "gen3" | "solo" | "unit" | "uta" | "others";
 
 export type MemberId =
   | "kanon"
@@ -31,20 +41,21 @@ export interface Member {
   nameJa: string;
   color: string;
   unit: "CatChu!" | "KALEIDOSCORE" | "5yncri5e!";
+  generation: Generation;
 }
 
 export const MEMBERS: Member[] = [
-  { id: "kanon", name: "Kanon Shibuya", nameJa: "澁谷かのん", color: "#ff8b38", unit: "CatChu!" },
-  { id: "keke", name: "Keke Tang", nameJa: "唐 可可", color: "#6edee8", unit: "KALEIDOSCORE" },
-  { id: "chisato", name: "Chisato Arashi", nameJa: "嵐 千砂都", color: "#ff728f", unit: "5yncri5e!" },
-  { id: "sumire", name: "Sumire Heanna", nameJa: "平安名すみれ", color: "#73c95b", unit: "CatChu!" },
-  { id: "ren", name: "Ren Hazuki", nameJa: "葉月 恋", color: "#4f65c9", unit: "KALEIDOSCORE" },
-  { id: "kinako", name: "Kinako Sakurakoji", nameJa: "桜小路きな子", color: "#f2bd3c", unit: "5yncri5e!" },
-  { id: "mei", name: "Mei Yoneme", nameJa: "米女メイ", color: "#dc4b53", unit: "CatChu!" },
-  { id: "shiki", name: "Shiki Wakana", nameJa: "若菜四季", color: "#77c7b3", unit: "5yncri5e!" },
-  { id: "natsumi", name: "Natsumi Onitsuka", nameJa: "鬼塚夏美", color: "#e96ab0", unit: "5yncri5e!" },
-  { id: "margarete", name: "Margarete Wien", nameJa: "ウィーン・マルガレーテ", color: "#9f6ac7", unit: "KALEIDOSCORE" },
-  { id: "tomari", name: "Tomari Onitsuka", nameJa: "鬼塚冬毬", color: "#617e9e", unit: "5yncri5e!" },
+  { id: "kanon", name: "Kanon Shibuya", nameJa: "澁谷かのん", color: "#ff8b38", unit: "CatChu!", generation: 1 },
+  { id: "keke", name: "Keke Tang", nameJa: "唐 可可", color: "#6edee8", unit: "KALEIDOSCORE", generation: 1 },
+  { id: "chisato", name: "Chisato Arashi", nameJa: "嵐 千砂都", color: "#ff728f", unit: "5yncri5e!", generation: 1 },
+  { id: "sumire", name: "Sumire Heanna", nameJa: "平安名すみれ", color: "#73c95b", unit: "CatChu!", generation: 1 },
+  { id: "ren", name: "Ren Hazuki", nameJa: "葉月 恋", color: "#4f65c9", unit: "KALEIDOSCORE", generation: 1 },
+  { id: "kinako", name: "Kinako Sakurakoji", nameJa: "桜小路きな子", color: "#f2bd3c", unit: "5yncri5e!", generation: 2 },
+  { id: "mei", name: "Mei Yoneme", nameJa: "米女メイ", color: "#dc4b53", unit: "CatChu!", generation: 2 },
+  { id: "shiki", name: "Shiki Wakana", nameJa: "若菜四季", color: "#77c7b3", unit: "5yncri5e!", generation: 2 },
+  { id: "natsumi", name: "Natsumi Onitsuka", nameJa: "鬼塚夏美", color: "#e96ab0", unit: "5yncri5e!", generation: 2 },
+  { id: "margarete", name: "Margarete Wien", nameJa: "ウィーン・マルガレーテ", color: "#9f6ac7", unit: "KALEIDOSCORE", generation: 3 },
+  { id: "tomari", name: "Tomari Onitsuka", nameJa: "鬼塚冬毬", color: "#617e9e", unit: "5yncri5e!", generation: 3 },
 ];
 
 const official = "https://www.lovelive-anime.jp/yuigaoka/music/";
@@ -150,4 +161,33 @@ export const SONG_BY_SLUG = Object.fromEntries(
 
 export function songsForBucket(bucket: SongBucket): Song[] {
   return SONGS.filter((song) => song.bucket === bucket);
+}
+
+// The seven board pick groups, in display order.
+export const PICK_GROUPS: PickGroup[] = [
+  "gen1",
+  "gen2",
+  "gen3",
+  "solo",
+  "unit",
+  "uta",
+  "others",
+];
+
+// Which board pick group (row) a song belongs to. Classification is hard-coded
+// (see lib/song-data.ts) — nothing is computed from performers at runtime:
+//   • subunit / others songs        → their own row
+//   • リエラのうた discography        → uta row
+//   • solo songs                     → solo row (not split by generation)
+//   • full-group songs               → generation row from SONG_GENERATIONS
+export function pickGroupForSong(song: Song): PickGroup {
+  if (song.bucket === "unit" || song.bucket === "others") return song.bucket;
+  if (UTA_SLUGS.has(song.slug)) return "uta";
+  if (song.bucket === "solo") return "solo";
+  const generation = SONG_GENERATIONS[song.slug];
+  return generation ? (`gen${generation}` as PickGroup) : "gen3";
+}
+
+export function songsForPickGroup(group: PickGroup): Song[] {
+  return SONGS.filter((song) => pickGroupForSong(song) === group);
 }

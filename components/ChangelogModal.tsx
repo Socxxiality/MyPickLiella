@@ -16,6 +16,39 @@ const ui = {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2",
+    date: "2026-06-15",
+    changes: {
+      en: [
+        "Added a 'By generation' / 'Liella!' mode toggle to view picks either way",
+        "Split Liella! songs into Generation rows — Gen 1, Gen 2, and Gen 3 — based on LL-Fans lineup data",
+        "Added a dedicated Solo row for all member solo songs",
+        "Added a Liella! no Uta (リエラのうた) row",
+        "By generation has 7 rows (21 picks): Gen 1 / Gen 2 / Gen 3 / Subunit / Solo / Liella! no Uta / Others",
+        "Updated song titles with authoritative romanized names from LL-Fans",
+        "Switching modes preserves your picks: the Liella! view can show only 3 full-group songs, but extra Gen picks stay remembered and reappear in By generation (deleting a visible song removes it from both)",
+      ],
+      ja: [
+        "「世代別」「Liella!」表示を切り替えるモードトグルを追加",
+        "Liella!楽曲をLL-Fansのメンバー編成データに基づき1期生・2期生・3期生に分割",
+        "全メンバーのソロ曲をまとめた「ソロ楽曲」枠を追加",
+        "「リエラのうた」枠を追加",
+        "世代別表示を7カテゴリ（21曲）に拡張：1期生 / 2期生 / 3期生 / ユニット / ソロ / リエラのうた / その他",
+        "LL-Fans準拠のローマ字表記に楽曲タイトルを更新",
+        "モード切り替えで選曲を保持：Liella!表示はグループ曲を3曲しか表示できませんが、超過した世代別の選曲は記憶され、世代別表示に戻すと復元されます（表示中の曲を削除すると両方から削除）",
+      ],
+      zh: [
+        "新增「按世代」/「Liella!」模式切换，可用两种方式查看选曲",
+        "根据 LL-Fans 的成员编成数据，将 Liella! 歌曲拆分为一期生 / 二期生 / 三期生",
+        "新增「个人歌曲」分类，集中所有成员个人曲",
+        "新增「リエラのうた」分类",
+        "按世代模式扩展为7个分类（21首）：一期生 / 二期生 / 三期生 / 小组 / 个人 / リエラのうた / 其他",
+        "使用 LL-Fans 权威罗马音更新歌曲标题",
+        "切换模式时保留选曲：Liella! 视图仅能显示3首团体曲，超出的世代选曲会被记住并在切回按世代时恢复（删除可见曲会同时从两者移除）",
+      ],
+    },
+  },
+  {
     version: "1.1",
     date: "2026-06-15",
     changes: {
