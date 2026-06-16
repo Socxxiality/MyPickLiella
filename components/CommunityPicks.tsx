@@ -19,7 +19,7 @@ interface CommunityPicksProps {
 
 const VOTER_KEY = "liella_community_voter_v1";
 const LAST_SYNC_KEY = "liella_community_last_picks_v2";
-const TOTAL_PICKS = 12;
+const TOTAL_PICKS = 21;
 
 const text = {
   en: {
@@ -34,9 +34,12 @@ const text = {
     syncing: "Syncing...",
     synced: "Synced automatically",
     empty: "No community ballots yet. Your picks can be the first.",
-    group: "Liella! songs",
-    unit: "Subunit songs",
+    gen1: "Gen 1 songs",
+    gen2: "Gen 2 songs",
+    gen3: "Gen 3 songs",
     solo: "Solo songs",
+    unit: "Subunit songs",
+    uta: "Liella! no Uta",
     others: "Others",
     mostPicked: "MOST PICKED SONGS",
     note: "One current ballot per browser. Display names are never submitted or stored.",
@@ -54,9 +57,12 @@ const text = {
     syncing: "同期中...",
     synced: "自動同期済み",
     empty: "まだ選曲がありません。最初の一票を追加してみよう。",
-    group: "Liella! 楽曲",
-    unit: "ユニット楽曲",
+    gen1: "1期生楽曲",
+    gen2: "2期生楽曲",
+    gen3: "3期生楽曲",
     solo: "ソロ楽曲",
+    unit: "ユニット楽曲",
+    uta: "リエラのうた",
     others: "その他",
     mostPicked: "最も選ばれた楽曲",
     note: "ブラウザごとに最新の1票のみ集計します。表示名は送信・保存されません。",
@@ -74,9 +80,12 @@ const text = {
     syncing: "同步中...",
     synced: "已自动同步",
     empty: "还没有社区投票。你的选曲可以成为第一个。",
-    group: "Liella! 歌曲",
-    unit: "小组歌曲",
+    gen1: "一期生歌曲",
+    gen2: "二期生歌曲",
+    gen3: "三期生歌曲",
     solo: "个人歌曲",
+    unit: "小组歌曲",
+    uta: "Liella!之歌",
     others: "其他",
     mostPicked: "最受欢迎歌曲",
     note: "每个浏览器仅统计最新的一票。显示名称不会被发送或保存。",
@@ -149,7 +158,15 @@ function MostPickedSection({
 }) {
   const allSongs = useMemo(() => {
     const merged = new Map<string, CommunitySongStat>();
-    for (const bucket of [stats.group, stats.unit, stats.solo, stats.others]) {
+    for (const bucket of [
+      stats.gen1,
+      stats.gen2,
+      stats.gen3,
+      stats.solo,
+      stats.unit,
+      stats.uta,
+      stats.others,
+    ]) {
       for (const song of bucket) {
         const existing = merged.get(song.slug);
         if (existing) {
@@ -358,9 +375,12 @@ export default function CommunityPicks({
         <>
           <MostPickedSection title={t.mostPicked} stats={stats} />
           <div className="community-grid">
-            <RankingSection title={t.group} color="#a760c3" songs={stats.group} ballots={stats.ballots} />
+            <RankingSection title={t.gen1} color="#d75f91" songs={stats.gen1} ballots={stats.ballots} />
+            <RankingSection title={t.gen2} color="#9b6cc9" songs={stats.gen2} ballots={stats.ballots} />
+            <RankingSection title={t.gen3} color="#4f9fb0" songs={stats.gen3} ballots={stats.ballots} />
             <RankingSection title={t.unit} color="#e78c52" songs={stats.unit} ballots={stats.ballots} />
-            <RankingSection title={t.solo} color="#d75f91" songs={stats.solo} ballots={stats.ballots} />
+            <RankingSection title={t.solo} color="#c95fa0" songs={stats.solo} ballots={stats.ballots} />
+            <RankingSection title={t.uta} color="#5fa86a" songs={stats.uta} ballots={stats.ballots} />
             <RankingSection title={t.others} color="#4f8f87" songs={stats.others} ballots={stats.ballots} />
           </div>
         </>

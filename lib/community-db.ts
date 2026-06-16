@@ -4,7 +4,12 @@ import { createHash } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { MEMBERS, SONG_BY_SLUG, type SongBucket } from "@/lib/catalog";
+import {
+  PICK_GROUPS,
+  SONG_BY_SLUG,
+  pickGroupForSong,
+  type PickGroup,
+} from "@/lib/catalog";
 import type { CommunitySongStat, CommunityStats } from "@/lib/community";
 import { canonicalSongSlug } from "@/lib/song-aliases";
 
@@ -16,22 +21,10 @@ interface BallotRow {
   updated_at: string;
 }
 
-const buckets: SongBucket[] = ["group", "unit", "solo", "others"];
-const legacyMemberIds = new Set<string>(MEMBERS.map((member) => member.id));
-const validSlots = new Set([
-  "group#0",
-  "group#1",
-  "group#2",
-  "unit#0",
-  "unit#1",
-  "unit#2",
-  "solo#0",
-  "solo#1",
-  "solo#2",
-  "others#0",
-  "others#1",
-  "others#2",
-]);
+const MAX_PICKS = PICK_GROUPS.length * 3;
+const validSlots = new Set(
+  PICK_GROUPS.flatMap((group) => [`${group}#0`, `${group}#1`, `${group}#2`]),
+);
 
 const globalCommunity = globalThis as typeof globalThis & {
   liellaCommunityDb?: DatabaseSync;
@@ -69,12 +62,12 @@ export function validatePicks(input: unknown): Picks {
   }
 
   const entries = Object.entries(input);
-  if (entries.length < 1 || entries.length > 12) {
-    throw new Error("A ballot must contain between 1 and 12 picks.");
+  if (entries.length < 1 || entries.length > MAX_PICKS) {
+    throw new Error(`A ballot must contain between 1 and ${MAX_PICKS} picks.`);
   }
 
   const clean: Picks = {};
-  const usedByBucket = new Map<string, Set<string>>();
+  const usedByGroup = new Map<string, Set<string>>();
 
   for (const [slot, slug] of entries) {
     if (!validSlots.has(slot) || typeof slug !== "string") {
@@ -83,58 +76,46 @@ export function validatePicks(input: unknown): Picks {
 
     const canonicalSlug = canonicalSongSlug(slug);
     const song = SONG_BY_SLUG[canonicalSlug];
-    const bucket = slot.split("#")[0];
-    if (!song || song.bucket !== bucket) {
+    const group = slot.split("#")[0];
+    if (!song || pickGroupForSong(song) !== group) {
       throw new Error("A selected song does not belong to its slot.");
     }
 
-    const used = usedByBucket.get(bucket) ?? new Set<string>();
+    const used = usedByGroup.get(group) ?? new Set<string>();
     if (used.has(canonicalSlug)) continue;
     used.add(canonicalSlug);
-    usedByBucket.set(bucket, used);
+    usedByGroup.set(group, used);
     clean[slot] = canonicalSlug;
   }
 
   return clean;
 }
 
+// Re-bucket a stored ballot (any prior slot vocabulary — group#/solo#/gen#/
+// member-id#) into the current rows by resolving each slug's canonical song and
+// current pick group. Preserves the chosen songs; only slot keys are remapped.
 function normalizeStoredPicks(input: unknown): Picks {
   if (!input || typeof input !== "object" || Array.isArray(input)) return {};
 
   const clean: Picks = {};
-  const usedByBucket = new Map<SongBucket, Set<string>>();
-  const legacySoloSlugs: string[] = [];
+  const used = new Map<string, Set<string>>();
 
-  for (const [slot, slug] of Object.entries(input)) {
+  const place = (group: string, slug: string) => {
+    const groupUsed = used.get(group) ?? new Set<string>();
+    if (groupUsed.has(slug)) return;
+    const openIndex = [0, 1, 2].find((index) => !clean[`${group}#${index}`]);
+    if (openIndex === undefined) return;
+    clean[`${group}#${openIndex}`] = slug;
+    groupUsed.add(slug);
+    used.set(group, groupUsed);
+  };
+
+  for (const slug of Object.values(input)) {
     if (typeof slug !== "string") continue;
     const canonicalSlug = canonicalSongSlug(slug);
     const song = SONG_BY_SLUG[canonicalSlug];
     if (!song) continue;
-
-    const [bucket] = slot.split("#");
-    if (validSlots.has(slot) && buckets.includes(bucket as SongBucket) && song.bucket === bucket) {
-      const songBucket = bucket as SongBucket;
-      const used = usedByBucket.get(songBucket) ?? new Set<string>();
-      if (!used.has(canonicalSlug)) {
-        clean[slot] = canonicalSlug;
-        used.add(canonicalSlug);
-        usedByBucket.set(songBucket, used);
-      }
-      continue;
-    }
-
-    if (legacyMemberIds.has(bucket) && song.bucket === "solo") {
-      if (!legacySoloSlugs.includes(canonicalSlug)) legacySoloSlugs.push(canonicalSlug);
-    }
-  }
-
-  const usedSolo = usedByBucket.get("solo") ?? new Set<string>();
-  for (const slug of legacySoloSlugs) {
-    if (usedSolo.has(slug)) continue;
-    const openIndex = [0, 1, 2].find((index) => !clean[`solo#${index}`]);
-    if (openIndex === undefined) break;
-    clean[`solo#${openIndex}`] = slug;
-    usedSolo.add(slug);
+    place(pickGroupForSong(song), canonicalSlug);
   }
 
   return clean;
@@ -177,10 +158,13 @@ export function getCommunityStats(): CommunityStats {
     .prepare("SELECT voter_key, picks_json, updated_at FROM ballots ORDER BY updated_at DESC")
     .all() as unknown as BallotRow[];
 
-  const tallies = {
-    group: new Map<string, number>(),
-    unit: new Map<string, number>(),
+  const tallies: Record<PickGroup, Map<string, number>> = {
+    gen1: new Map<string, number>(),
+    gen2: new Map<string, number>(),
+    gen3: new Map<string, number>(),
     solo: new Map<string, number>(),
+    unit: new Map<string, number>(),
+    uta: new Map<string, number>(),
     others: new Map<string, number>(),
   };
   const activeRows: Array<{ picks: Picks; updatedAt: string }> = [];
@@ -211,7 +195,9 @@ export function getCommunityStats(): CommunityStats {
     for (const slug of Object.values(picks)) {
       const song = SONG_BY_SLUG[slug];
       if (!song) continue;
-      tallies[song.bucket].set(slug, (tallies[song.bucket].get(slug) ?? 0) + 1);
+      const group = pickGroupForSong(song);
+      if (!group) continue;
+      tallies[group].set(slug, (tallies[group].get(slug) ?? 0) + 1);
       selections += 1;
     }
   }
@@ -235,9 +221,12 @@ export function getCommunityStats(): CommunityStats {
     ballots: activeRows.length,
     selections,
     updatedAt: activeRows[0]?.updatedAt ?? null,
-    group: rank(tallies.group),
-    unit: rank(tallies.unit),
+    gen1: rank(tallies.gen1),
+    gen2: rank(tallies.gen2),
+    gen3: rank(tallies.gen3),
     solo: rank(tallies.solo),
+    unit: rank(tallies.unit),
+    uta: rank(tallies.uta),
     others: rank(tallies.others),
   };
   globalCommunity.liellaCommunityStatsCache = {
