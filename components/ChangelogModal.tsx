@@ -16,6 +16,36 @@ const ui = {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2",
+    date: "2026-06-15",
+    changes: {
+      en: [
+        "Split Liella! songs into Generation rows — Gen 1, Gen 2, and Gen 3 — based on LL-Fans lineup data",
+        "Added a dedicated Solo row for all member solo songs",
+        "Added a Liella! no Uta (リエラのうた) row",
+        "Board now has 7 rows (21 picks): Gen 1 / Gen 2 / Gen 3 / Solo / Subunit / Liella! no Uta / Others",
+        "Updated song titles with authoritative romanized names from LL-Fans",
+        "Existing picks are automatically migrated to the new rows",
+      ],
+      ja: [
+        "Liella!楽曲をLL-Fansのメンバー編成データに基づき1期生・2期生・3期生に分割",
+        "全メンバーのソロ曲をまとめた「ソロ楽曲」枠を追加",
+        "「リエラのうた」枠を追加",
+        "選曲ボードを7カテゴリ（21曲）に拡張：1期生 / 2期生 / 3期生 / ソロ / ユニット / リエラのうた / その他",
+        "LL-Fans準拠のローマ字表記に楽曲タイトルを更新",
+        "既存の選曲は新しいカテゴリへ自動的に移行",
+      ],
+      zh: [
+        "根据 LL-Fans 的成员编成数据，将 Liella! 歌曲拆分为一期生 / 二期生 / 三期生",
+        "新增「个人歌曲」分类，集中所有成员个人曲",
+        "新增「リエラのうた」分类",
+        "选曲板扩展为7个分类（21首）：一期生 / 二期生 / 三期生 / 个人 / 小组 / リエラのうた / 其他",
+        "使用 LL-Fans 权威罗马音更新歌曲标题",
+        "现有选曲将自动迁移至新分类",
+      ],
+    },
+  },
+  {
     version: "1.1",
     date: "2026-06-15",
     changes: {
