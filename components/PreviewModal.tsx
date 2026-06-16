@@ -8,7 +8,6 @@ const ui = {
   en: {
     title: "Your My Pick image",
     subtitle: "One portrait board, ready for sharing.",
-    downloadInline: "Download image",
     download: "Download image",
     regenerating: "Regenerating...",
     showTitles: "Show song titles",
@@ -19,7 +18,6 @@ const ui = {
   ja: {
     title: "あなたの My Pick 画像",
     subtitle: "1枚のボード、共有の準備ができました。",
-    downloadInline: "画像をダウンロード",
     download: "画像をダウンロード",
     regenerating: "再生成中...",
     showTitles: "曲名を表示",
@@ -30,7 +28,6 @@ const ui = {
   zh: {
     title: "你的 My Pick 图片",
     subtitle: "一张选曲板，准备分享。",
-    downloadInline: "下载图片",
     download: "下载图片",
     regenerating: "重新生成中...",
     showTitles: "显示歌曲名",
@@ -90,9 +87,6 @@ export default function PreviewModal({
         <div className="preview-images single-image">
           <figure>
             <img src={image} alt="My Pick Liella! board" />
-            <button onClick={() => download(image, "mypick-liella.webp")}>
-              {t.downloadInline}
-            </button>
           </figure>
         </div>
 
