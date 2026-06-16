@@ -11,8 +11,8 @@ const contentSecurityPolicy = [
   "img-src 'self' blob: data:",
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
-  `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}`,
-  "connect-src 'self'",
+  `script-src 'self' 'unsafe-inline' https://analytics.jayjay.li${isProduction ? "" : " 'unsafe-eval'"}`,
+  "connect-src 'self' https://analytics.jayjay.li",
   "worker-src 'self' blob:",
 ].join("; ");
 
