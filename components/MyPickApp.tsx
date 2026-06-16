@@ -175,6 +175,29 @@ function buildMaster(entries: Iterable<[string, string]>): Picks {
   return master;
 }
 
+// Pack songs into gen rows left-to-right (leftmost free slot), in the given
+// order, deduped. Used when a Liella!-mode edit reflows the master so its gen
+// rows have no gaps (deleting in Liella! shouldn't leave a hole in Gen mode).
+function compactMaster(slugs: Iterable<string>): Picks {
+  const next: Picks = {};
+  const used = new Map<string, Set<string>>();
+  for (const raw of slugs) {
+    if (typeof raw !== "string") continue;
+    const slug = canonicalSongSlug(raw);
+    const song = SONG_BY_SLUG[slug];
+    if (!song) continue;
+    const group = pickGroupForSong(song);
+    const groupUsed = used.get(group) ?? new Set<string>();
+    if (groupUsed.has(slug)) continue;
+    const openIndex = [0, 1, 2].find((i) => !next[`${group}#${i}`]);
+    if (openIndex === undefined) continue;
+    next[`${group}#${openIndex}`] = slug;
+    groupUsed.add(slug);
+    used.set(group, groupUsed);
+  }
+  return next;
+}
+
 // Project the master onto Liella! rows by song.bucket. Two passes:
 //   1. POSITIONAL — a master song at row#i takes bucket#i if free (so a song in a
 //      row's 3rd slot stays in the 3rd slot). On a clash the earlier generation
@@ -391,8 +414,9 @@ export default function MyPickApp() {
   const activeDisplay = mode === "gen" ? picks : liellaView;
 
   // Apply a Liella!-mode slot edit: update the sticky view (clearing leaves a
-  // gap — no auto-fill), then rebuild the gen master from view + stash so it
-  // stays current for gen mode, community, export, and persistence.
+  // gap — no auto-fill), then rebuild the gen master from view + stash. The
+  // master is COMPACTED (gen rows left-aligned, visible songs before stashed
+  // ones) so that returning to Gen mode shows no holes from a Liella! deletion.
   const editLiellaSlot = useCallback(
     (slot: string, slug: string | null) => {
       const nextView: Picks = { ...liellaView };
@@ -403,7 +427,10 @@ export default function MyPickApp() {
         delete nextView[slot];
       }
       setLiellaView(nextView);
-      savePicks(buildMaster([...Object.entries(nextView), ...Object.entries(hiddenStash)]));
+      const bySlot = (a: [string, string], b: [string, string]) => a[0].localeCompare(b[0]);
+      const visible = [...Object.entries(nextView)].sort(bySlot).map(([, v]) => v);
+      const stashed = [...Object.entries(hiddenStash)].sort(bySlot).map(([, v]) => v);
+      savePicks(compactMaster([...visible, ...stashed]));
     },
     [liellaView, hiddenStash, savePicks],
   );
