@@ -409,8 +409,7 @@ button:disabled {
 }
 
 .primary-button,
-.secondary-button,
-.preview-images button {
+.secondary-button {
   border: 0;
   border-radius: 13px;
   padding: 12px 17px;
@@ -1564,12 +1563,6 @@ button:disabled {
   box-shadow: 0 15px 35px rgba(16, 36, 58, 0.17);
 }
 
-.preview-images button {
-  width: 100%;
-  margin-top: 10px;
-  color: var(--ink);
-  background: white;
-}
 
 .preview-options {
   display: flex;

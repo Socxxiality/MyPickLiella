@@ -90,9 +90,6 @@ export default function PreviewModal({
         <div className="preview-images single-image">
           <figure>
             <img src={image} alt="My Pick Liella! board" />
-            <button onClick={() => download(image, "mypick-liella.webp")}>
-              {t.downloadInline}
-            </button>
           </figure>
         </div>
 
