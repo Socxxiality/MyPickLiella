@@ -212,6 +212,32 @@ button:disabled {
   background: var(--ink);
 }
 
+.mode-switch {
+  display: inline-flex;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass-2);
+  box-shadow: 0 12px 30px rgba(16, 36, 58, 0.06);
+}
+
+.mode-switch button {
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 18px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.mode-switch button.active {
+  color: white;
+  background: linear-gradient(120deg, #c95fa0, #9b6cc9);
+}
+
 .theme-toggle {
   display: grid;
   width: 38px;
@@ -465,6 +491,40 @@ button:disabled {
 
 .others-card .feature-label strong {
   color: #39766f;
+}
+
+/* Per-generation solo cards share the solo-card base, with distinct accents. */
+.gen1-card {
+  border-color: rgba(215, 95, 145, 0.3);
+}
+
+.gen2-card {
+  border-color: rgba(155, 108, 201, 0.32);
+}
+
+.gen3-card {
+  border-color: rgba(79, 159, 176, 0.32);
+}
+
+.gen1-card .feature-label strong {
+  color: #ad3f70;
+}
+
+.gen2-card .feature-label strong {
+  color: #6e44a0;
+}
+
+.gen3-card .feature-label strong {
+  color: #2f7d8c;
+}
+
+.uta-card {
+  border-color: rgba(95, 168, 106, 0.32);
+  background: var(--card-others);
+}
+
+.uta-card .feature-label strong {
+  color: #3c7a48;
 }
 
 .feature-label span {
@@ -1587,6 +1647,42 @@ button:disabled {
 
 .others-block h2 {
   color: #39766f;
+}
+
+.gen-block {
+  border-color: #e5a0bf;
+  background: rgba(255, 237, 245, 0.92);
+}
+
+.gen2-block {
+  border-color: #c3a3df;
+  background: rgba(245, 238, 252, 0.92);
+}
+
+.gen3-block {
+  border-color: #97c7d2;
+  background: rgba(235, 248, 250, 0.94);
+}
+
+.gen1-block h2 {
+  color: #ad3f70;
+}
+
+.gen2-block h2 {
+  color: #6e44a0;
+}
+
+.gen3-block h2 {
+  color: #2f7d8c;
+}
+
+.uta-block {
+  border-color: #9ccfa6;
+  background: rgba(236, 248, 238, 0.94);
+}
+
+.uta-block h2 {
+  color: #3c7a48;
 }
 
 .export-three {
